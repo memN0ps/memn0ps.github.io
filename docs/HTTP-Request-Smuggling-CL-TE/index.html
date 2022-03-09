@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>HTTP Request Smuggling (CL.TE) - memN0ps</title>
+  <meta name="description" content="Special thanks to James Kettle @albinowax
+Persistence is key, do it for the learning, not for the bounty ;)
+Quick note:
+Not all bounties are a success, this is a story about how I tried harder when failing. (As full time Security Consultant I spent my own time on this which was about 1 week and I don’t regret the learning experience) To make this process easier I’d recommend using the Burp plugin “HTTP Request Smuggler”.">
+  <meta name="author" content="memN0ps"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "memN0ps",
+    
+    "url": "https:\/\/memn0ps.github.io\/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "https:\/\/memn0ps.github.io\/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/HTTP-Request-Smuggling-CL-TE\/",
+          "name": "HTTP request smuggling ( cl. te)"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "memN0ps"
+  },
+  "headline": "HTTP Request Smuggling (CL.TE)",
+  "description" : "Special thanks to James Kettle @albinowax\nPersistence is key, do it for the learning, not for the bounty ;)\nQuick note:\nNot all bounties are a success, this is a story about how I tried harder when failing. (As full time Security Consultant I spent my own time on this which was about 1 week and I don’t regret the learning experience) To make this process easier I’d recommend using the Burp plugin “HTTP Request Smuggler”.",
+  "inLanguage" : "en",
+  "wordCount":  1222 ,
+  "datePublished" : "2019-09-13T00:00:00",
+  "dateModified" : "2019-09-13T00:00:00",
+  "image" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "https:\/\/memn0ps.github.io\/HTTP-Request-Smuggling-CL-TE\/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "https:\/\/memn0ps.github.io\/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="HTTP Request Smuggling (CL.TE)" />
+<meta property="og:description" content="Special thanks to James Kettle @albinowax
+Persistence is key, do it for the learning, not for the bounty ;)
+Quick note:
+Not all bounties are a success, this is a story about how I tried harder when failing. (As full time Security Consultant I spent my own time on this which was about 1 week and I don’t regret the learning experience) To make this process easier I’d recommend using the Burp plugin “HTTP Request Smuggler”.">
+<meta property="og:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+<meta property="og:url" content="https://memn0ps.github.io/HTTP-Request-Smuggling-CL-TE/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="memN0ps" />
+
+  <meta name="twitter:title" content="HTTP Request Smuggling (CL.TE)" />
+  <meta name="twitter:description" content="Special thanks to James Kettle @albinowax
+Persistence is key, do it for the learning, not for the bounty ;)
+Quick note:
+Not all bounties are a success, this is a story about how I tried harder when …">
+  <meta name="twitter:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@memN0ps" />
+  <meta name="twitter:creator" content="@memN0ps" />
+  <link href='https://memn0ps.github.io/avatar-icon.jpg' rel='icon' type='image/x-icon'/>
+  <meta name="generator" content="Hugo 0.93.1" />
+  <link rel="alternate" href="https://memn0ps.github.io/index.xml" type="application/rss+xml" title="memN0ps"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><link rel="stylesheet" href="https://memn0ps.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" /><link rel="stylesheet" href="https://memn0ps.github.io/css/syntax.css" /><link rel="stylesheet" href="https://memn0ps.github.io/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://memn0ps.github.io/">memN0ps</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="memN0ps" href="https://memn0ps.github.io/">
+            <img class="avatar-img" src="https://memn0ps.github.io/avatar-icon.jpg" alt="memN0ps" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>HTTP Request Smuggling (CL.TE)</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on September 13, 2019
+  
+  
+  
+  
+    
+      &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;memN0ps
+    
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p><strong>Special thanks to James Kettle @albinowax</strong></p>
+<p>Persistence is key, do it for the learning, not for the bounty ;)</p>
+<p>Quick note:</p>
+<p>Not all bounties are a success, this is a story about how I tried harder when failing. (As full time Security Consultant I spent my own time on this which was about 1 week and I don’t regret the learning experience)
+To make this process easier I’d recommend using the Burp plugin “HTTP Request Smuggler”. I used that plugin and tried manually too but I just didn’t take any screenshots of the plugin. It would be a pain if you didn’t use this Burp plugin for TE.CL.</p>
+<p>I ran out of time as the target was taken off from Synack but I spent most of the time on bypassing the backend, however I tried/attempted all of the following: (some worked, some didn’t plus I ran out of time)</p>
+<ul>
+<li>Using HTTP request smuggling to bypass front-end security controls</li>
+<li>Revealing front-end request rewriting</li>
+<li>Capturing other users’ requests</li>
+<li>Using HTTP request smuggling to exploit reflected XSS</li>
+<li>Using HTTP request smuggling to turn an on-site redirect into an open redirect</li>
+<li>Using HTTP request smuggling to perform web cache poisoning</li>
+<li>Using HTTP request smuggling to perform web cache deception</li>
+</ul>
+<p>(For more information please refer to Portswigger’s blog)</p>
+<p>I highly recommend finishing all the labs so you don’t have to go back and forth like me :p</p>
+<h3 id="background">Background</h3>
+<p>HTTP request smuggling CL.TE is a web application vulnerability which allows an attacker to smuggle multiple HTTP request by tricking the front-end (load balancer or reverse proxy) to forward multiple HTTP requests to a back-end server over the same network connection and the protocol used for the back-end connections carries the risk that the two servers disagree about the boundaries between requests.
+In CL.TE the front-end server uses the Content-Length header and the back-end server uses the Transfer-Encoding header.</p>
+<h3 id="detail">Detail</h3>
+<p>I found my first HTTP request smuggling CL.TE attack on Synack Red Team which was confirmed from the request shown in <code>Figure 1</code>.</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot1.png" alt="screenshot1">
+<strong>Figure 1: Status code 404, Not Found</strong></p>
+<p>The first thing that came to mind is to make a successful request to see the response to give me another confirmation shown in <code>Figure 2</code>.</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot2.png" alt="screenshot2">
+<strong>Figure 2: Status code 200, OK</strong></p>
+<p>The next thing I added was localhost to the Host header, however there seemed to be a problem as shown in <code>Figure 3</code>.</p>
+<p>(I tried many other things too, not just robots.txt)</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot3.png" alt="screenshot3">
+<strong>Figure 3: Status code 403, Forbidden</strong></p>
+<p>In the Synack description and based on the IP address the target was using AWS EC2 instance. I then happily to tried to access the <code>/latest/meta-data/</code> and changed the Host header to <code>169.254.169.254</code>, which is an AWS IP address for accessing internal resources.</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot4.png" alt="screenshot4">
+<strong>Figure 4: Attempting to get /latest/meta-data/</strong></p>
+<p>I soon realised that I hadn’t finished the entire Web Security Academy exercises so I decided to go back and do some more research.</p>
+<p>After a bit of research I soon realised that Portswigger blog mentioned that the request can be blocked due to the second request’s Host header conflicting with the smuggled Host header in the first request.</p>
+<p>I then issued the request shown in <code>Figure 5</code> so the second request’s headers are appended to the smuggled request body instead and don’t conflict with each other.</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot5.png" alt="screenshot5">
+<strong>Figure 5: Status code 403, Forbidden, attempted to append the GET request to the smuggled request’s body</strong></p>
+<p>I also tried the request to <code>/latest/meta-data/</code> as shown in <code>Figure 6</code> which failed.</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot6.png" alt="screenshot6">
+<strong>Figure 6: Attempt to get meta-data</strong></p>
+<p>By now I had tried a lot of requests which failed. Normally this would work depending on the web application. I decided to do more labs and more research.</p>
+<h3 id="revealing-front-end-request-rewriting">Revealing front-end request rewriting</h3>
+<p>I then came across revealing front-end request rewriting.</p>
+<p>In many of the web application the front-end (load balancer or reverse proxy) might rewrite requests prior to being sent to the backend server, usually by adding extra headers to HTTP requests.</p>
+<p>These headers could be:</p>
+<ul>
+<li>terminate the TLS connection and add some headers describing the protocol and ciphers that were used;</li>
+<li>add an X-Forwarded-For header containing the user’s IP address;</li>
+<li>determine the user’s ID based on their session token and add a header identifying the user; or</li>
+<li>add some sensitive information that is of interest for other attacks.</li>
+</ul>
+<p>In some cases HTTP request smuggling will fail if some of these headers are missing as the back-end server might not process these requests in a way it normally does.</p>
+<p>You can leak these headers using the following steps:</p>
+<ul>
+<li>Find a POST request that reflects the value of a request parameter into the application’s response.</li>
+<li>Shuffle the parameters so that the reflected parameter appears last in the message body.</li>
+<li>Smuggle this request to the back-end server, followed directly by a normal request whose rewritten form you want to reveal.</li>
+</ul>
+<p>So I performed the steps above and leaked the headers, at this point I was pretty happy as this was a step forward after some research, <code>Figure 7</code>.</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot7.png" alt="screenshot7">
+<strong>Figure 7: Leaking front-end headers</strong></p>
+<p>This is what the headers looked like when they were decoded.</p>
+<pre tabindex="0"><code>GET / HTTP/1.1
+X-Forwarded-For: X.X.X.X
+X-Forwarded-Proto: https
+X-Forwarded-Port: 443
+Host: XXXXXXXXXXXXXX
+X-Amzn-Trace-Id: Root=XXXXXXXXXXXXXXXXXXXX
+Content-Length: 1028
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36
+Accept: text/html,application/xhtml xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Upgrade-Insecure-Requests: 1
+Content-Type: application/x-www-form-urlencoded
+Transfer-Encoding : chunked
+0
+</code></pre><p>So I attempted all possible combinations with the headers, even the ones that did not make sense. I had spent almost one week on this vulnerability, researching it, doing the labs, attempting to do it on the target etc&hellip;.</p>
+<p>As you can see whenever I add the Host header without the name of the target, it gives me 403. Otherwise resources such as meta-data give me 404 and resources such as robots.txt give me 200 (with targets name in Host header).</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot8.png" alt="screenshot8">
+<strong>Figure 8: Status code 404 not found after attempting to add all headers</strong></p>
+<p>As soon as I changed the header to something other than the targets name, once again 403 even for something like robots.txt</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot9.png" alt="screenshot9">
+<strong>Figure 9: Status code, 403 Forbidden, after attempting to play around with headers.</strong></p>
+<p>AT LAST! I did something different here, I changed the protocol from HTTP/1.1 to HTTP/1.0 on both requests and I got a 302 Found.</p>
+<p>I was redirected to SSO and it took me to a login portal, the server was publicly accessible too however it requires SAML to take you to the login portal I believe.</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot10.png" alt="screenshot10">
+<strong>Figure 10: Status code 302 Found, SSO</strong></p>
+<p>Here is the login portal:</p>
+<p><img src="/HTTP-Request-Smuggling-CL-TE/screenshot11.png" alt="screenshot11">
+<strong>Figure 11: Login Portal</strong></p>
+<p>It seems that the backend requires some sort of authentication (maybe?) in order to access internal resources which sounds like a rare case but could be possible. What are your thoughts?&hellip; Hope this helps.</p>
+<p>I have submitted the bug (lower impact than usual) and received a bounty, thank you Synack :)</p>
+<h3 id="recommendations-from-portswiggerhttpsportswiggernetweb-securityrequest-smuggling">Recommendations (<a href="https://portswigger.net/web-security/request-smuggling">From PortSwigger</a>)</h3>
+<ul>
+<li>Disable reuse of back-end connections, so that each back-end request is sent over a separate network connection.</li>
+<li>Use HTTP/2 for back-end connections, as this protocol prevents ambiguity about the boundaries between requests.</li>
+<li>Use exactly the same web server software for the front-end and back-end servers, so that they agree about the boundaries between requests.</li>
+</ul>
+<h3 id="references">References</h3>
+<p><a href="https://portswigger.net/web-security/request-smuggling">https://portswigger.net/web-security/request-smuggling</a></p>
+<p><a href="https://portswigger.net/web-security/request-smuggling/finding">https://portswigger.net/web-security/request-smuggling/finding</a></p>
+<p><a href="https://portswigger.net/web-security/request-smuggling/exploiting">https://portswigger.net/web-security/request-smuggling/exploiting</a></p>
+<p><a href="https://portswigger.net/research/http-desync-attacks-request-smuggling-reborn">https://portswigger.net/research/http-desync-attacks-request-smuggling-reborn</a></p>
+<p><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html</a></p>
+<h3 id="credits">Credits</h3>
+<ul>
+<li>James Kettle (@albinowax)</li>
+<li>Portswigger</li>
+<li>Web Security Academy</li>
+<li>Dr. Frans Lategan (@fransla)</li>
+<li>sorcerer</li>
+</ul>
+
+
+        
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://memn0ps.github.io/Kernel-Mode-Rootkits/" data-toggle="tooltip" data-placement="top" title="Kernel Mode Rootkits">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-Part-1/" data-toggle="tooltip" data-placement="top" title="Windows User Mode Exploit Development: Part 1">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+
+    </div>
+  </div>
+</div>
+
+      
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="https://github.com/memN0ps" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/memN0ps" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            <a href="" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              memN0ps
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2022
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://memn0ps.github.io/">memN0ps</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="https://gohugo.io">Hugo v0.93.1</a> powered &nbsp;&bull;&nbsp; Theme <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a> adapted from <a href="https://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="https://memn0ps.github.io/js/main.js"></script><script> renderMathInElement(document.body); </script><script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script><script src="https://memn0ps.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+
+
+    
+  </body>
+</html>
+

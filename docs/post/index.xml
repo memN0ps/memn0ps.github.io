@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on memN0ps</title>
+    <link>https://memn0ps.github.io/post/</link>
+    <description>Recent content in Posts on memN0ps</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <lastBuildDate>Wed, 23 Feb 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://memn0ps.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Process Hollowing</title>
+      <link>https://memn0ps.github.io/Process-Hollowing/</link>
+      <pubDate>Wed, 23 Feb 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/Process-Hollowing/</guid>
+      <description>Injecting code into explorer.exe or notepad.exe is not trivial to evade detection as these processes generally do not generate any network activity. The svchost.exe system process is a shared service process that allows several services to share this process to reduce resource consumption, which usually generates network activity. The svchost.exe process runs under a SYSTEM integrity level, and that will prevent us from injecting inside it from a lower integrity level.</description>
+    </item>
+    
+    <item>
+      <title>Parallel Syscalls</title>
+      <link>https://memn0ps.github.io/Parallel-Syscalls/</link>
+      <pubDate>Sat, 12 Feb 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/Parallel-Syscalls/</guid>
+      <description>EDR Parallel-asis through Analysis Recently MDSec / Peter Winter-Smtih researched a new technique and released a blog post EDR Parallel-asis through Analysis - MDSec, that show us how to extract system call numbers for 3 critical Windows API functions called NtOpenFile, NtCreateSection and NtMapViewOfSection. Combining these functions allows us to load a fresh copy of NTDLL.dll from disk into memory. Before we deep dive into this technique, there are a few fundamental concepts about Windows Internals and Portable Executable (PE) files to learn.</description>
+    </item>
+    
+    <item>
+      <title>XMAS Pwn: Santa&#39;s Tobacco Shop</title>
+      <link>https://memn0ps.github.io/XMAS-Pwn-Santa-Tobacco-Shop/</link>
+      <pubDate>Wed, 22 Dec 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/XMAS-Pwn-Santa-Tobacco-Shop/</guid>
+      <description>Sigreturn-Oriented Programming (SROP) Vulnerability Analysis We take a look at the main function in IDA graph view and can see that a system call is made. We can quickly determine what function is being called by looking at system call number inside the EAX register before the system call. Also IDA has detected that the write function is called. We can confirm this by looking at system call table which shows that 1 is the system call number for write.</description>
+    </item>
+    
+    <item>
+      <title>HackTheBox Pwn: Ropme</title>
+      <link>https://memn0ps.github.io/HackTheBox-Pwn-Ropme/</link>
+      <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/HackTheBox-Pwn-Ropme/</guid>
+      <description>Bypassing Data Execution Prevention (DEP) and Address Space Layout Randomization (ASLR) Buffer Overflow / Memory Corruption A buffer overflow is when an application attempts to write more data in a buffer than expected or when an application attempts to write more data in a memory area past a buffer.
+A buffer is a sequential section of memory that is allocated to contain anything from strings to integers. Going past the memory area of the allocated block can crash the program, corrupt data and even execute malicious code.</description>
+    </item>
+    
+    <item>
+      <title>Windows User Mode Exploit Development: Data Execution Prevention (DEP) Part 4</title>
+      <link>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-DEP-Part-4/</link>
+      <pubDate>Mon, 12 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-DEP-Part-4/</guid>
+      <description>Please complete Windows User Mode Exploit Development Part 1, Windows User Mode Exploit Development SEH Part 2 and Windows User Mode Exploit Development Egghunter Part 3 before continuing so everything makes sense as some things will not be explained again :).
+Please note, to understand exploit development thoroughly and adequately, you must have a strong understanding of both x86 (x32 bit) and x86_64 (x64 bit) assembly. Learning reverse engineering is one of the best ways to understand how things work, and it will help you when you&amp;rsquo;re stuck and want to debug.</description>
+    </item>
+    
+    <item>
+      <title>Windows User Mode Exploit Development: Egghunter Part 3</title>
+      <link>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-Egghunter-Part-3/</link>
+      <pubDate>Wed, 01 Apr 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-Egghunter-Part-3/</guid>
+      <description>Note Please complete Windows User Mode Exploit Development Part 1 and Windows User Mode Exploit Development SEH Part 2 before continuing so everything makes sense as some things will not be explained again :).
+Enter the Egghunter An egghunter is a short piece of assembly code which is safely able to search the Virtual Address Space (memory) for a signature or an &amp;ldquo;egg&amp;rdquo; which is a short string signifying the beginning of a larger payload.</description>
+    </item>
+    
+    <item>
+      <title>Windows User Mode Exploit Development: Structured Exception Handler (SEH) Part 2</title>
+      <link>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-SEH-Part-2/</link>
+      <pubDate>Mon, 27 Jan 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-SEH-Part-2/</guid>
+      <description>Structured Exception Handler Let&amp;rsquo;s go through this again from Windows User Mode Exploit Development Part 1
+What is a Buffer Overflow? A buffer overflow is when an application attempts to write more data in a buffer than expected or when an application attempts to write more data in a memory area past a buffer. A buffer is a sequential section of memory that is allocated to contain anything from strings to integers.</description>
+    </item>
+    
+    <item>
+      <title>Windows User Mode Exploit Development: Part 1</title>
+      <link>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-Part-1/</link>
+      <pubDate>Sat, 25 Jan 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-Part-1/</guid>
+      <description>What is a Buffer Overflow? A buffer overflow is when an application attempts to write more data in a buffer than expected or when an application attempts to write more data in a memory area past a buffer. A buffer is a sequential section of memory that is allocated to contain anything from strings to integers. Going past the memory area of the allocated block can crash the program, corrupt data and even execute malicious code.</description>
+    </item>
+    
+    <item>
+      <title>HTTP Request Smuggling (CL.TE)</title>
+      <link>https://memn0ps.github.io/HTTP-Request-Smuggling-CL-TE/</link>
+      <pubDate>Fri, 13 Sep 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/HTTP-Request-Smuggling-CL-TE/</guid>
+      <description>Special thanks to James Kettle @albinowax
+Persistence is key, do it for the learning, not for the bounty ;)
+Quick note:
+Not all bounties are a success, this is a story about how I tried harder when failing. (As full time Security Consultant I spent my own time on this which was about 1 week and I don’t regret the learning experience) To make this process easier I’d recommend using the Burp plugin “HTTP Request Smuggler”.</description>
+    </item>
+    
+    <item>
+      <title>Kernel Mode Rootkits</title>
+      <link>https://memn0ps.github.io/Kernel-Mode-Rootkits/</link>
+      <pubDate>Fri, 10 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/Kernel-Mode-Rootkits/</guid>
+      <description>Note: This research as been discontinued.
+Description A kernel mode rootkit is a stealthy malicious program that allows an attacker to maintain root/SYSTEM access on a victims computer. Kernel mode rootkits run in ring 0 whilst user mode rootkits run in ring 3.
+Figure 1: Rings (0x0sec)
+Building the Windows Device Driver This is a first “hello world” example
+#include &amp;#34;ntddk.h&amp;#34;NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRegistryPath){DbgPrint(&amp;#34;Hello World!</description>
+    </item>
+    
+    <item>
+      <title>User Mode Rootkits</title>
+      <link>https://memn0ps.github.io/User-Mode-Rootkits/</link>
+      <pubDate>Mon, 06 May 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://memn0ps.github.io/User-Mode-Rootkits/</guid>
+      <description>Note: This research as been discontinued.
+Description A user-mode rootkit is usually known as a DLL injection or code injection. A DLL injection is a technique used to inject code within the address space of a process with the use of a dynamic link library (DLL). User-mode rootkits run in ring 3, while kernel-mode rootkits run in ring 0.
+Types:  DLL Injection ✔ PE Injection Process Hollowing Thread Execution Hijacking Hook Injection Registry Modification APC Injection Shell Tray Injection Shim Injection IAT and Inline Hooking  I&amp;rsquo;ll be using C++ and the Windows Application Programming Interface to demonstrate an example of a classic DLL injection.</description>
+    </item>
+    
+  </channel>
+</rss>

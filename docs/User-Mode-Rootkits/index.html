@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>User Mode Rootkits - memN0ps</title>
+  <meta name="description" content="Note: This research as been discontinued.
+Description A user-mode rootkit is usually known as a DLL injection or code injection. A DLL injection is a technique used to inject code within the address space of a process with the use of a dynamic link library (DLL). User-mode rootkits run in ring 3, while kernel-mode rootkits run in ring 0.
+Types:  DLL Injection ✔ PE Injection Process Hollowing Thread Execution Hijacking Hook Injection Registry Modification APC Injection Shell Tray Injection Shim Injection IAT and Inline Hooking  I&rsquo;ll be using C&#43;&#43; and the Windows Application Programming Interface to demonstrate an example of a classic DLL injection.">
+  <meta name="author" content="memN0ps"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "memN0ps",
+    
+    "url": "https:\/\/memn0ps.github.io\/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "https:\/\/memn0ps.github.io\/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/User-Mode-Rootkits\/",
+          "name": "User mode rootkits"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "memN0ps"
+  },
+  "headline": "User Mode Rootkits",
+  "description" : "Note: This research as been discontinued.\nDescription A user-mode rootkit is usually known as a DLL injection or code injection. A DLL injection is a technique used to inject code within the address space of a process with the use of a dynamic link library (DLL). User-mode rootkits run in ring 3, while kernel-mode rootkits run in ring 0.\nTypes:  DLL Injection ✔ PE Injection Process Hollowing Thread Execution Hijacking Hook Injection Registry Modification APC Injection Shell Tray Injection Shim Injection IAT and Inline Hooking  I\u0026rsquo;ll be using C\u002b\u002b and the Windows Application Programming Interface to demonstrate an example of a classic DLL injection.",
+  "inLanguage" : "en",
+  "wordCount":  1343 ,
+  "datePublished" : "2019-05-06T00:00:00",
+  "dateModified" : "2019-05-06T00:00:00",
+  "image" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "https:\/\/memn0ps.github.io\/User-Mode-Rootkits\/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "https:\/\/memn0ps.github.io\/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="User Mode Rootkits" />
+<meta property="og:description" content="Note: This research as been discontinued.
+Description A user-mode rootkit is usually known as a DLL injection or code injection. A DLL injection is a technique used to inject code within the address space of a process with the use of a dynamic link library (DLL). User-mode rootkits run in ring 3, while kernel-mode rootkits run in ring 0.
+Types:  DLL Injection ✔ PE Injection Process Hollowing Thread Execution Hijacking Hook Injection Registry Modification APC Injection Shell Tray Injection Shim Injection IAT and Inline Hooking  I&rsquo;ll be using C&#43;&#43; and the Windows Application Programming Interface to demonstrate an example of a classic DLL injection.">
+<meta property="og:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+<meta property="og:url" content="https://memn0ps.github.io/User-Mode-Rootkits/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="memN0ps" />
+
+  <meta name="twitter:title" content="User Mode Rootkits" />
+  <meta name="twitter:description" content="Note: This research as been discontinued.
+Description A user-mode rootkit is usually known as a DLL injection or code injection. A DLL injection is a technique used to inject code within the address …">
+  <meta name="twitter:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@memN0ps" />
+  <meta name="twitter:creator" content="@memN0ps" />
+  <link href='https://memn0ps.github.io/avatar-icon.jpg' rel='icon' type='image/x-icon'/>
+  <meta name="generator" content="Hugo 0.93.1" />
+  <link rel="alternate" href="https://memn0ps.github.io/index.xml" type="application/rss+xml" title="memN0ps"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><link rel="stylesheet" href="https://memn0ps.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" /><link rel="stylesheet" href="https://memn0ps.github.io/css/syntax.css" /><link rel="stylesheet" href="https://memn0ps.github.io/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://memn0ps.github.io/">memN0ps</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="memN0ps" href="https://memn0ps.github.io/">
+            <img class="avatar-img" src="https://memn0ps.github.io/avatar-icon.jpg" alt="memN0ps" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>User Mode Rootkits</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on May 6, 2019
+  
+  
+  
+  
+    
+      &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;memN0ps
+    
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p>Note: This research as been discontinued.</p>
+<h2 id="description">Description</h2>
+<p>A user-mode rootkit is usually known as a DLL injection or code injection. A DLL injection is a technique used to inject code within the address space of a process with the use of a dynamic link library (DLL). User-mode rootkits run in ring 3, while kernel-mode rootkits run in ring 0.</p>
+<h2 id="types">Types:</h2>
+<ol>
+<li>DLL Injection ✔</li>
+<li>PE Injection</li>
+<li>Process Hollowing</li>
+<li>Thread Execution Hijacking</li>
+<li>Hook Injection</li>
+<li>Registry Modification</li>
+<li>APC Injection</li>
+<li>Shell Tray Injection</li>
+<li>Shim Injection</li>
+<li>IAT and Inline Hooking</li>
+</ol>
+<p>I&rsquo;ll be using C++ and the Windows Application Programming Interface to demonstrate an example of a classic DLL injection.</p>
+<h2 id="classic-dll-injection-via-createremotethread-and-loadlibrary-in-a-nutshell">Classic DLL Injection via CreateRemoteThread and LoadLibrary in a Nutshell</h2>
+<p>To successfully inject a DLL inside a target process, the first thing we need to do is take a snapshot of all the processes using <code>CreateToolhelp32Snapshot()</code>.</p>
+<p>We then iterate through the system snapshot looking for our process, including the first process we encounter, using <code>Process32First()</code> and <code>Process32Next()</code>.</p>
+<p>Once we find the target process, we will create a handle to it with the desired access using <code>OpenProcess()</code>.</p>
+<p>Now that we have sufficient access and privileges to the target process, we will then allocate memory for our DLL path inside the target processes address space using <code>VirtualAllocEx()</code>.</p>
+<p>Once we have allocated memory, we will write the DLL path to the target process memory address, we just allocated using <code>WriteProcessMemory()</code>.</p>
+<p>We then will create a remote thread in the target process, using <code>CreateRemoteThread()</code>, which calls <code>LoadLibraryA()</code> as our DLL path, as an argument.</p>
+<p><code>CreateRemoteThread()</code> uses <code>LoadLibrary()</code> which is a kernel32.dll function that loads the specified module into the address space of the calling process.</p>
+<p><code>CreateRemoteThread()</code>, <code>NtCreateThreadEx()</code>, or <code>RtlCreateUserThread()</code> can be used to execute code in the target process. However, <code>NtCreateThreadEx()</code> and <code>RtlCreateUserThread()</code> are undocumented but the plan is to pass the address of <code>LoadLibrary()</code> to one these 3 functions mentioned above so that the target process can execute the DLL on our behalf.</p>
+<p>After getting the target process to execute our code, we will wait for the execution of our loader thread to finish using <code>WaitForSingleObject()</code>.</p>
+<p>Once finished, we can free the memory allocated for our DLL path using <code>VirtualFreeEx()</code>.</p>
+<p>It should be noted that the <code>CreateRemoteThread()</code> techniques is not very stealthy compared to <code>manual mapping</code> and other sophisticated. However, these won&rsquo;t be covered in this blog.</p>
+<h4 id="the-following-depicts-a-classic-dll-injection-in-a-nutshell">The following depicts a classic DLL injection in a nutshell:</h4>
+<p><img src="/User-Mode-Rootkits/screenshot1.gif" alt="screenshot1.gif"></p>
+<p><strong>Figure 1: Classic DLL Injection (<a href="https://www.elastic.co/blog/ten-process-injection-techniques-technical-survey-common-and-trending-process">EndGame</a>)</strong></p>
+<h2 id="steps">Steps</h2>
+<p><a href="https://docs.microsoft.com/en-us/windows/win32/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot">CreateToolhelp32Snapshot()</a></p>
+<p>Takes a snapshot of the specified processes, as well as the heaps, modules, and threads used by these processes.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">HANDLE</span> <span class="nf">CreateToolhelp32Snapshot</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span> <span class="n">dwFlags</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span> <span class="n">th32ProcessID</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/tlhelp32/nf-tlhelp32-process32first">Process32First()</a></p>
+<p>Retrieves information about the first process encountered in a system snapshot.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">BOOL</span> <span class="nf">Process32First</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">HANDLE</span>           <span class="n">hSnapshot</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPPROCESSENTRY32</span> <span class="n">lppe</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/tlhelp32/nf-tlhelp32-process32next">Process32Next()</a></p>
+<p>Retrieves information about the next process recorded in a system snapshot.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">BOOL</span> <span class="nf">Process32Next</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">HANDLE</span>           <span class="n">hSnapshot</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPPROCESSENTRY32</span> <span class="n">lppe</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess">OpenProcess()</a></p>
+<p>Opens an existing local process object.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">HANDLE</span> <span class="nf">OpenProcess</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span> <span class="n">dwDesiredAccess</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BOOL</span>  <span class="n">bInheritHandle</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span> <span class="n">dwProcessId</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualallocex">VirtualAllocEx()</a></p>
+<p>Reserves, commits, or changes the state of a region of memory within the virtual address space of a specified process. The function initializes the memory it allocates to zero.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">LPVOID</span> <span class="nf">VirtualAllocEx</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">HANDLE</span> <span class="n">hProcess</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPVOID</span> <span class="n">lpAddress</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SIZE_T</span> <span class="n">dwSize</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>  <span class="n">flAllocationType</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>  <span class="n">flProtect</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-writeprocessmemory">WriteProcessMemory()</a></p>
+<p>Writes data to an area of memory in a specified process. The entire area to be written to must be accessible or the operation fails.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">BOOL</span> <span class="nf">WriteProcessMemory</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">HANDLE</span>  <span class="n">hProcess</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPVOID</span>  <span class="n">lpBaseAddress</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPCVOID</span> <span class="n">lpBuffer</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SIZE_T</span>  <span class="n">nSize</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SIZE_T</span>  <span class="o">*</span><span class="n">lpNumberOfBytesWritten</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya">LoadLibraryA()</a></p>
+<p>Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded.</p>
+<p>For additional load options, use the LoadLibraryEx function.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">HMODULE</span> <span class="nf">LoadLibraryA</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPCSTR</span> <span class="n">lpLibFileName</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createremotethread">CreateRemoteThread()</a></p>
+<p>Creates a thread that runs in the virtual address space of another process.</p>
+<p>Use the CreateRemoteThreadEx function to create a thread that runs in the virtual address space of another process and optionally specify extended attributes.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">HANDLE</span> <span class="nf">CreateRemoteThread</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">HANDLE</span>                 <span class="n">hProcess</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPSECURITY_ATTRIBUTES</span>  <span class="n">lpThreadAttributes</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SIZE_T</span>                 <span class="n">dwStackSize</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPTHREAD_START_ROUTINE</span> <span class="n">lpStartAddress</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPVOID</span>                 <span class="n">lpParameter</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                  <span class="n">dwCreationFlags</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPDWORD</span>                <span class="n">lpThreadId</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject">WaitForSingleObject()</a></p>
+<p>Waits until the specified object is in the signaled state or the time-out interval elapses.</p>
+<p>To enter an alertable wait state, use the WaitForSingleObjectEx function. To wait for multiple objects, use WaitForMultipleObjects.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">DWORD</span> <span class="nf">WaitForSingleObject</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">HANDLE</span> <span class="n">hHandle</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>  <span class="n">dwMilliseconds</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualfreeex">VirtualFreeEx()</a></p>
+<p>Releases, decommits, or releases and decommits a region of memory within the virtual address space of a specified process.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">BOOL</span> <span class="nf">VirtualFreeEx</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">HANDLE</span> <span class="n">hProcess</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LPVOID</span> <span class="n">lpAddress</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SIZE_T</span> <span class="n">dwSize</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>  <span class="n">dwFreeType</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><h3 id="example-1-reverse-engineering-a-sample-malware-performing-a-classic-dll-injection">Example 1: Reverse Engineering a Sample Malware Performing a Classic DLL Injection</h3>
+<p><img src="/User-Mode-Rootkits/screenshot1.png" alt="screenshot1.png"></p>
+<p><strong>Figure 2: Classic DLL Injection via CreateRemoteThread (<a href="https://www.elastic.co/blog/ten-process-injection-techniques-technical-survey-common-and-trending-process">EndGame</a>)</strong></p>
+<h3 id="example-2-simple-dll">Example 2: Simple DLL</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// dllmain.cpp : Defines the entry point for the DLL application.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&#34;stdafx.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;Windows.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="n">BOOL</span> <span class="n">APIENTRY</span> <span class="nf">DllMain</span><span class="p">(</span><span class="n">HINSTANCE</span> <span class="n">hModule</span><span class="p">,</span> <span class="n">DWORD</span> <span class="n">fdwReason</span><span class="p">,</span> <span class="n">LPVOID</span> <span class="n">lpReserved</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">fdwReason</span> <span class="o">==</span> <span class="n">DLL_PROCESS_ATTACH</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">MessageBox</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="sa">L</span><span class="s">&#34;DLL injected sucessfully!&#34;</span><span class="p">,</span> <span class="sa">L</span><span class="s">&#34;DLL Injection Demo&#34;</span><span class="p">,</span> <span class="n">MB_OK</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="n">TRUE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><strong>Figure 3: dllmain.cpp</strong></p>
+<h3 id="example-3-classic-dll-injector">Example 3: Classic DLL Injector</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;Windows.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;TlHelp32.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="c1">//This function can be improved, will work on it whenever I can.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">bool</span> <span class="nf">injectDll</span><span class="p">(</span><span class="n">uintptr_t</span> <span class="n">processID</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">dllPath</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//This will open a handle to the target process
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="n">HANDLE</span> <span class="n">hProcess</span> <span class="o">=</span> <span class="n">OpenProcess</span><span class="p">(</span><span class="n">PROCESS_ALL_ACCESS</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="n">processID</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//if the handle is valid then execute condition
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="p">(</span><span class="n">hProcess</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// This will allocate memory for the dllpath in the target process length of the path string + null terminator
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="n">LPVOID</span> <span class="n">loadPath</span> <span class="o">=</span> <span class="n">VirtualAllocEx</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">dllPath</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MEM_COMMIT</span><span class="p">,</span> <span class="n">PAGE_READWRITE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// We write the path to the address of the memory we just allocated in the target process
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="n">WriteProcessMemory</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="n">loadPath</span><span class="p">,</span> <span class="p">(</span><span class="n">LPVOID</span><span class="p">)</span><span class="n">dllPath</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">dllPath</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// This will create a Remote Thread in the target process which calls LoadLibraryA as our dllpath as an argument -&gt; program loads our dll
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="n">HANDLE</span> <span class="n">remoteThread</span> <span class="o">=</span> <span class="n">CreateRemoteThread</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">LPTHREAD_START_ROUTINE</span><span class="p">)</span><span class="n">GetProcAddress</span><span class="p">(</span><span class="n">GetModuleHandleA</span><span class="p">(</span><span class="s">&#34;Kernel32.dll&#34;</span><span class="p">),</span> <span class="s">&#34;LoadLibraryA&#34;</span><span class="p">),</span> <span class="n">loadPath</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">//We wait for the execution of our loader thread to finish
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="n">WaitForSingleObject</span><span class="p">(</span><span class="n">remoteThread</span><span class="p">,</span> <span class="n">INFINITE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// Free the memory allocated for our dll path
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="n">VirtualFreeEx</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="n">loadPath</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">dllPath</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MEM_RELEASE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">//Clean up and return true
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="n">CloseHandle</span><span class="p">(</span><span class="n">remoteThread</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="n">CloseHandle</span><span class="p">(</span><span class="n">hProcess</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//Return false if not successful
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">uintptr_t</span> <span class="nf">getProcessID</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">targetProcess</span><span class="p">,</span> <span class="n">uintptr_t</span> <span class="n">desiredAccess</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">HANDLE</span> <span class="n">hProcess</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//Takes a snapshot of the specified processes, as well as the heaps, modules, and threads used by these processes. 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="n">HANDLE</span> <span class="n">hSnapShot</span> <span class="o">=</span> <span class="n">CreateToolhelp32Snapshot</span><span class="p">(</span><span class="n">TH32CS_SNAPPROCESS</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="n">uintptr_t</span> <span class="n">processID</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//Check if snapshot created is valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="p">(</span><span class="n">hSnapShot</span> <span class="o">==</span> <span class="n">INVALID_HANDLE_VALUE</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Failed to take a snapshot&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="n">PROCESSENTRY32</span> <span class="n">pEntry</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//The size of the structure, in bytes. Before calling the Process32First function, set this
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">//member to sizeof(PROCESSENTRY32). If you do not initialize dwSize, Process32First fails.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="n">pEntry</span><span class="p">.</span><span class="n">dwSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">PROCESSENTRY32</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//Loop through the processes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">//Compare the targetProcess with the process in pEntry.szExeFile (current process)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">//if the name of the process we are at right now matches the target process then we found it
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">pEntry</span><span class="p">.</span><span class="n">szExeFile</span><span class="p">,</span> <span class="n">targetProcess</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="c1">//Process Found
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Found Process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">pEntry</span><span class="p">.</span><span class="n">szExeFile</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; with process ID &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">pEntry</span><span class="p">.</span><span class="n">th32ProcessID</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">//Open the process with desired access and the process ID of the target process
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="n">hProcess</span> <span class="o">=</span> <span class="n">OpenProcess</span><span class="p">(</span><span class="n">desiredAccess</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="n">pEntry</span><span class="p">.</span><span class="n">th32ProcessID</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">			<span class="n">processID</span> <span class="o">=</span> <span class="n">pEntry</span><span class="p">.</span><span class="n">th32ProcessID</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">CloseHandle</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">//Check if handle value valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="k">if</span> <span class="p">(</span><span class="n">hProcess</span> <span class="o">==</span> <span class="n">INVALID_HANDLE_VALUE</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Failed getting a handle to the process!&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">//Retrieves information about the first process encountered in a system snapshot.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">//Returns TRUE if the first entry of the process list has been copied to the buffer or FALSE otherwise.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">Process32Next</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pEntry</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="n">processID</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="n">injectDll</span><span class="p">(</span><span class="n">getProcessID</span><span class="p">(</span><span class="s">&#34;notepad++.exe&#34;</span><span class="p">,</span> <span class="n">PROCESS_ALL_ACCESS</span><span class="p">),</span> <span class="s">&#34;C:</span><span class="se">\\</span><span class="s">Users</span><span class="se">\\</span><span class="s">memN0ps</span><span class="se">\\</span><span class="s">source</span><span class="se">\\</span><span class="s">repos</span><span class="se">\\</span><span class="s">dllmain</span><span class="se">\\</span><span class="s">Debug</span><span class="se">\\</span><span class="s">dllmain.dll&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><strong>Figure 4: Injector.cpp</strong></p>
+<p>The source code for my classic DLL injector can be found here:</p>
+<ul>
+<li><a href="https://github.com/memN0ps/DLL_Injector">https://github.com/memN0ps/DLL_Injector</a></li>
+</ul>
+<p>This is separate to the <code>Figure 2: Classic DLL Injection via CreateRemoteThread</code></p>
+<h2 id="manual-mapping">Manual Mapping</h2>
+<p>Manual Mapping is a stealthy DLL injection technique used to evade detection which emulates the LoadLibrary()  function. It works by copying the DLL image into the address space of the target process.</p>
+<p>Since the DLL image is directly copied into the address space of the target process, the DLL will be hidden from the ToolHelp32SnapShot() function and the module list of PEB thus making detection more difficult.</p>
+<p>More coming soon&hellip;.</p>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://docs.microsoft.com/">https://docs.microsoft.com/</a></li>
+<li><a href="https://www.malwaretech.com/">https://www.malwaretech.com/</a></li>
+<li><a href="https://0x00sec.org/t/userland-api-monitoring-and-code-injection-detection/5565">https://0x00sec.org/t/userland-api-monitoring-and-code-injection-detection/5565</a></li>
+<li><a href="https://www.elastic.co/blog/ten-process-injection-techniques-technical-survey-common-and-trending-process">https://www.elastic.co/blog/ten-process-injection-techniques-technical-survey-common-and-trending-process</a></li>
+<li><a href="https://www.aldeid.com/wiki/Category:Digital-Forensics/Rootkits/User-mode-Rootkits">https://www.aldeid.com/wiki/Category:Digital-Forensics/Rootkits/User-mode-Rootkits</a></li>
+<li><a href="http://blog.opensecurityresearch.com/2013/01/windows-dll-injection-basics.html">http://blog.opensecurityresearch.com/2013/01/windows-dll-injection-basics.html</a></li>
+<li><a href="https://www.youtube.com/channel/UCDk155eaoariJF2Dn2j5WKA">https://www.youtube.com/channel/UCDk155eaoariJF2Dn2j5WKA</a></li>
+<li><a href="https://github.com/Zer0Mem0ry">https://github.com/Zer0Mem0ry</a></li>
+<li><a href="https://guidedhacking.com/">https://guidedhacking.com/</a></li>
+<li><a href="https://github.com/memN0ps/DLL_Injector">https://github.com/memN0ps/DLL_Injector</a></li>
+<li><a href="https://github.com/memN0ps/Memory">https://github.com/memN0ps/Memory</a></li>
+</ul>
+
+
+        
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+          
+            <li class="next">
+              <a href="https://memn0ps.github.io/Kernel-Mode-Rootkits/" data-toggle="tooltip" data-placement="top" title="Kernel Mode Rootkits">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+
+    </div>
+  </div>
+</div>
+
+      
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="https://github.com/memN0ps" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/memN0ps" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            <a href="" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              memN0ps
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2022
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://memn0ps.github.io/">memN0ps</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="https://gohugo.io">Hugo v0.93.1</a> powered &nbsp;&bull;&nbsp; Theme <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a> adapted from <a href="https://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="https://memn0ps.github.io/js/main.js"></script><script> renderMathInElement(document.body); </script><script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script><script src="https://memn0ps.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+
+
+    
+  </body>
+</html>
+

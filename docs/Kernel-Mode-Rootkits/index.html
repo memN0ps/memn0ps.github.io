@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Kernel Mode Rootkits - memN0ps</title>
+  <meta name="description" content="Note: This research as been discontinued.
+Description A kernel mode rootkit is a stealthy malicious program that allows an attacker to maintain root/SYSTEM access on a victims computer. Kernel mode rootkits run in ring 0 whilst user mode rootkits run in ring 3.
+Figure 1: Rings (0x0sec)
+Building the Windows Device Driver This is a first “hello world” example
+#include &#34;ntddk.h&#34;NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRegistryPath){DbgPrint(&#34;Hello World!">
+  <meta name="author" content="memN0ps"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "memN0ps",
+    
+    "url": "https:\/\/memn0ps.github.io\/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "https:\/\/memn0ps.github.io\/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/Kernel-Mode-Rootkits\/",
+          "name": "Kernel mode rootkits"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "memN0ps"
+  },
+  "headline": "Kernel Mode Rootkits",
+  "description" : "Note: This research as been discontinued.\nDescription A kernel mode rootkit is a stealthy malicious program that allows an attacker to maintain root\/SYSTEM access on a victims computer. Kernel mode rootkits run in ring 0 whilst user mode rootkits run in ring 3.\nFigure 1: Rings (0x0sec)\nBuilding the Windows Device Driver This is a first “hello world” example\n#include \u0026#34;ntddk.h\u0026#34;\rNTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRegistryPath)\r{\rDbgPrint(\u0026#34;Hello World!",
+  "inLanguage" : "en",
+  "wordCount":  1410 ,
+  "datePublished" : "2019-05-10T00:00:00",
+  "dateModified" : "2019-05-10T00:00:00",
+  "image" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "https:\/\/memn0ps.github.io\/Kernel-Mode-Rootkits\/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "https:\/\/memn0ps.github.io\/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="Kernel Mode Rootkits" />
+<meta property="og:description" content="Note: This research as been discontinued.
+Description A kernel mode rootkit is a stealthy malicious program that allows an attacker to maintain root/SYSTEM access on a victims computer. Kernel mode rootkits run in ring 0 whilst user mode rootkits run in ring 3.
+Figure 1: Rings (0x0sec)
+Building the Windows Device Driver This is a first “hello world” example
+#include &#34;ntddk.h&#34;NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRegistryPath){DbgPrint(&#34;Hello World!">
+<meta property="og:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+<meta property="og:url" content="https://memn0ps.github.io/Kernel-Mode-Rootkits/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="memN0ps" />
+
+  <meta name="twitter:title" content="Kernel Mode Rootkits" />
+  <meta name="twitter:description" content="Note: This research as been discontinued.
+Description A kernel mode rootkit is a stealthy malicious program that allows an attacker to maintain root/SYSTEM access on a victims computer. Kernel mode …">
+  <meta name="twitter:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@memN0ps" />
+  <meta name="twitter:creator" content="@memN0ps" />
+  <link href='https://memn0ps.github.io/avatar-icon.jpg' rel='icon' type='image/x-icon'/>
+  <meta name="generator" content="Hugo 0.93.1" />
+  <link rel="alternate" href="https://memn0ps.github.io/index.xml" type="application/rss+xml" title="memN0ps"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><link rel="stylesheet" href="https://memn0ps.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" /><link rel="stylesheet" href="https://memn0ps.github.io/css/syntax.css" /><link rel="stylesheet" href="https://memn0ps.github.io/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://memn0ps.github.io/">memN0ps</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="memN0ps" href="https://memn0ps.github.io/">
+            <img class="avatar-img" src="https://memn0ps.github.io/avatar-icon.jpg" alt="memN0ps" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>Kernel Mode Rootkits</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on May 10, 2019
+  
+  
+  
+  
+    
+      &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;memN0ps
+    
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p>Note: This research as been discontinued.</p>
+<h3 id="description">Description</h3>
+<p>A kernel mode rootkit is a stealthy malicious program that allows an attacker to maintain root/SYSTEM access on a victims computer. Kernel mode rootkits run in ring 0 whilst user mode rootkits run in ring 3.</p>
+<p><img src="/Kernel-Mode-Rootkits/screenshot1.png" alt="screenshot1"></p>
+<p><strong>Figure 1: Rings (<a href="https://0x00sec.org/t/user-mode-rootkits-iat-and-inline-hooking/1108">0x0sec</a>)</strong></p>
+<h3 id="building-the-windows-device-driver">Building the Windows Device Driver</h3>
+<p>This is a first “hello world” example</p>
+<pre tabindex="0"><code>#include &#34;ntddk.h&#34;
+
+NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRegistryPath)
+{
+    DbgPrint(&#34;Hello World!&#34;);
+    return STATUS_SUCCESS;
+}
+</code></pre><h3 id="the-unload-routine">The Unload Routine</h3>
+<p>theDriverObject is an argument passed into the driver’s main function which points to a data structure that contains function pointers. One of these pointers is called the “unload routine”.</p>
+<p>To unload the driver from memory we need to set the unload routine. Not setting this pointer will ensure that the driver remains loaded unless we reboot.</p>
+<p>During the development phase the driver will need to be unloaded many times. We should set the unload routine so that we don’t need to reboot every time we want to test a new version of the driver.</p>
+<pre tabindex="0"><code>// BASIC DEVICE DRIVER
+
+#include &#34;ntddk.h&#34;
+
+// This is our unload function
+VOID OnUnload(IN PDRIVER_OBJECT DriverObject)
+{
+    DbgPrint(&#34;OnUnload called\n&#34;);
+}
+
+NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRegistryPath)
+{
+    DbgPrint(&#34;I loaded!\n&#34;);
+    
+    //Initialize the pointer to the unload function
+    //in the driver object
+    
+    theDriverObject-&gt;DriverUnload = OnUnload;
+    
+    return STATUS_SUCCESS;
+}
+</code></pre><p>Now we can safely load and unload the driver without rebooting.</p>
+<h3 id="fusion-rootkits-bridging-user-and-kernel-modes">Fusion Rootkits: Bridging User and Kernel Modes</h3>
+<p>A fusion rootkit is a rootkit which contains bother user-mode and kernel-mode components. The user-mode part deals with most of the features, such as networking and remote control. The kernel-mode part deals with stealth and hardware access.</p>
+<p><img src="/Kernel-Mode-Rootkits/screenshot2.png" alt="screenshot2"></p>
+<p><strong>Figure 2: A fusion rootkit using both user and kernel components (<a href="https://www.amazon.com/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319">Subverting the Windows Kernel</a>)</strong></p>
+<p>User-mode programs can communicate with kernel-mode programs through many ways, one of the most common way is I/O Control (IOCTL) commands. IOCTL commands are command messages that can be defined by the driver developer.</p>
+<h3 id="io-request-packets">I/O Request Packets</h3>
+<p>A good device driver concept to understand is I/O Request Packets (IRPs). A Windows device driver needs to handle IRP to communicate with a user-mode program which are just data structures that contain buffers of data.</p>
+<p>In the kernel an IRP is represented as a user-mode program that can open a file handle and write to it.</p>
+<p>When a user-mode program writes the string “Hello World!” to a file handle, the kernel creates an IRP that contains the buffer and string “Hello World!” Communication between the user-mode and kernel-mode occurs via these IRPs.</p>
+<p>To process the IRPs, the kernel driver must include functions to handle the IRP like we did in installing the unload routine. We set the appropriate function pointers in the driver object:</p>
+<pre tabindex="0"><code>#include &#34;ntddk.h&#34;
+
+NTSTATUS OnStubDispatch(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+{
+    Irp-&gt;IoStatus.Status = STATUS_SUCCESS;
+    IoCompleteRequest(Irp, IO_NO_INCREMENT);
+    return STATUS_SUCCESS;
+}
+
+VOID OnUnload(IN PDRIVER_OBJECT DriverObject)
+{
+    DbgPrint(&#34;OnUnload called\n&#34;);
+}
+
+NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRegistryPath)
+{
+    int i;
+    theDriverObject-&gt;DriverUnload = OnUnload;
+
+    for (i = 0; i &lt; IRP_MJ_MAXIMUM_FUNCTION; i++)
+    {
+        theDriverObject-&gt;MajorFunction[i] = OnStubDispatch;
+    }
+    
+    return STATUS_SUCCESS;
+}
+</code></pre><p><img src="/Kernel-Mode-Rootkits/screenshot3.png" alt="screenshot3"></p>
+<p><strong>Figure 3: Routing of I/O calls through “major-function” pointers. (<a href="https://www.amazon.com/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319">Subverting the Windows Kernel</a>)</strong></p>
+<p>The Major Functions are stored in an array and the locations are marked with the defined values IRP_MJ_READ, IRP_MJ_WRITE, IRP_MJ_DEVICE_CONTROL as shown in the sample code and Figure 3.</p>
+<p>The OnStubDispatch function is a stub routine that does nothing and all of the IRP defined values are set to point to it.</p>
+<p>For each major function we would most likely create a seperate function in a real driver. For example, assuming we will be handling the READ and WRITE events, each of these events is triggered when a user-mode program calls ReadFile or WriteFile with a handle to the driver.</p>
+<p>A more complete driver might handle additional functions, such as those for closing a file or sending an IOCTL command. An example set of major function pointer follows:</p>
+<pre tabindex="0"><code>DriverObject-&gt;MajorFunction[IRP_MJ_CREATE] = MyOpen;
+DriverObject-&gt;MajorFunction[IRP_MJ_CLOSE] = MyClose;
+DriverObject-&gt;MajorFunction[IRP_MJ_READ] = MyRead;
+DriverObject-&gt;MajorFunction[IRP_MJ_WRITE] = MyWrite;
+DriverObject-&gt;MajorFunction[IRP_MJ_DEVICE_CONTROL] = MyIoControl;
+</code></pre><p>The driver needs to specify a function that will be called for each major function. For example, the driver might contain these functions:</p>
+<pre tabindex="0"><code>NTSTATUS MyOpen(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+{
+    // do something
+    ...
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS MyClose(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+{
+    // do something
+    ...
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS MyRead(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+{
+    // do something
+    ...
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS MyWrite(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+{
+    // do something
+    ...
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS MyIOControl(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+{
+    PIO_STACK_LOCATION IrpSp;
+    ULONG FunctionCode;
+    
+    IrpSp = IoGetCurrentIrpStackLocation(Irp);
+    FunctionCode = IrpSp-&gt;Parameters.DeviceIoControl.IoControlCode;
+    
+    switch (FunctionCode)
+    {
+        // do something
+        ...
+    }
+    return STATUS_SUCCESS;
+}
+</code></pre><p><img src="/Kernel-Mode-Rootkits/screenshot4.png" alt="screenshot4"></p>
+<p><strong>Figure 4: The kernel driver can define specific callback functions for each type of “major function”. (<a href="https://www.amazon.com/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319">Subverting the Windows Kernel</a>)</strong></p>
+<p>Figure 4 shows how user-mode program calls are routed through the Major Function array and eventually to the driver defined functions MyRead, MyWrite and MyIOCTL.</p>
+<p>We now know how function calls in user-mode translate to function calls in kernel mode. We can now cover how you can expose your driver to user-mode using file objects.</p>
+<h3 id="creating-a-file-handle">Creating a File Handle</h3>
+<p>File handles is an important concept to understand because, in order to use a kernel driver from a user-mode program, the user-mode program must open a file handle to the driver. For this to happen, the driver must first register a named device first, then the user-mode program will open the named device as though it were a file which is very similar to UNIX systems, everything is treated like a file.</p>
+<p>For example, the kernel driver registers a device using the following:</p>
+<pre tabindex="0"><code>const WCHAR deviceNameBuffer[] = L&#34;\\Device\\MyDevice&#34;;
+PDEVICE_OBJECT g_RootkitDevice; // Global pointer to our device object
+NTSTATUS DriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
+{
+    NTSTATUS ntStatus;
+    UNICODE_STRING deviceNameUnicodeString;
+
+    // Set up our name and symbolic link.
+    RtlInitUnicodeString(&amp;deviceNameUnicodeString, deviceNameBuffer);
+
+    // Set up the device.                       // For driver extension
+    ntStatus = IoCreateDevice(DriverObject, 0, &amp;deviceNameUnicodeString, 0x00001234, 0, TRUE, &amp;g_RootkitDevice);
+...
+</code></pre><p>In the following code snippet, the DriverEntry routine promptly creates a device named MyDevice. Note the fully qualified path that is used in this call:</p>
+<p><code>const WCHAR deviceNameBuffer[] = L&quot;\\Device\\MyDevice&quot;;</code></p>
+<p>In the following code snippet, the “L” prefix causes the string to be defined in UNICODE, which is required for the API call. A user-mode program can open the device as though it were a file, once the device is created:</p>
+<pre tabindex="0"><code>hDevice = CreateFile(&#34;\\\\Device\\MyDevice&#34;, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
+
+if (hDevice == ((HANDLE)-1))
+    return FALSE;
+</code></pre><p>The file handle can be used as a parameter in user-mode functions such as ReadFile and WriteFile once it is opened, it can also be used to make IOCTL calls. IRP’s are generated with these operations which can then be handled in the driver program.</p>
+<p>File handles are easy to open and use from user-mode. We will now explore symbolic links which makes file handles easier to use.</p>
+<h3 id="adding-a-symbolic-link">Adding a Symbolic Link</h3>
+<p>Another important concept to understand is symbolic links. To make file handles easier for user-mode programs, some drivers will use symbolic links, which is not mandatory but it’s nice to have since it’s easier to remember.</p>
+<p>Some rootkits will use symbolic links while others will skip this technique. A rootkit which uses this technique would create a device and then make a call to IoCreateSymbolicLink to create the symbolic link.</p>
+<pre tabindex="0"><code>const WCHAR deviceLinkBuffer[] = L&#34;\\DosDevices\\vicesys2&#34;;
+const WCHAR deviceNameBuffer[] = L&#34;\\Device\\vicesys2&#34;;
+
+NTSTATUS DriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath )
+{
+    NTSTATUS ntStatus;
+    
+    UNICODE_STRING deviceNameUnicodeString;
+    UNICODE_STRING deviceLinkUnicodeString;
+    
+    // Set up our name and symbolic link.
+    
+    RtlInitUnicodeString(&amp;deviceNameUnicodeString, deviceNameBuffer);
+    
+    RtlInitUnicodeString(&amp;deviceLinkUnicodeString, deviceLinkBuffer);
+    
+    // Set up the device
+    //
+                                                // For driver extension
+    ntStatus = IoCreateDevice(DriverObject, 0, &amp;deviceNameUnicodeString FILE_DEVICE_ROOTKIT, 0, TRUE, &amp;g_RootkitDevice);
+    
+    if (NT_SUCCESS(ntStatus))
+        ntStatus = IoCreateSymbolicLink(&amp;deviceLinkUnicodeString, &amp;deviceNameUnicodeString);
+</code></pre><p>A user-mode program can open a handle to the device using the string \.\MyDevice , after a symbolic link has been created. It is not require to create a symbolic link but it makes it easier for the user-mode code to find the driver.</p>
+<pre tabindex="0"><code>hDevice = CreateFile(&#34;\\\\.\\MyDevice&#34;, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
+
+if (hDevice == ((HANDLE)-1))
+    return FALSE;
+</code></pre><p>We have discussed how to communicate between user mode and kernel mode using a file handle. The next step is to discuss how you load a device driver.</p>
+<h3 id="loading-the-rootkit">Loading the Rootkit</h3>
+<h3 id="the-quick-and-dirty-way-to-load-a-driver">The Quick-and-Dirty Way to Load a Driver</h3>
+<h3 id="the-right-way-to-load-a-driver">The Right way to Load a Driver</h3>
+<p>Coming soon…</p>
+<h3 id="references">References</h3>
+<ul>
+<li><a href="https://0x00sec.org/t/user-mode-rootkits-iat-and-inline-hooking/1108">https://0x00sec.org/t/user-mode-rootkits-iat-and-inline-hooking/1108</a></li>
+<li><a href="https://www.amazon.com/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319">https://www.amazon.com/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319</a></li>
+</ul>
+<h3 id="credits">Credits</h3>
+<p>All credits go to “Subverting the Windows Kernel”, an awesome book by Greg Hoglund</p>
+
+
+        
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://memn0ps.github.io/User-Mode-Rootkits/" data-toggle="tooltip" data-placement="top" title="User Mode Rootkits">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://memn0ps.github.io/HTTP-Request-Smuggling-CL-TE/" data-toggle="tooltip" data-placement="top" title="HTTP Request Smuggling (CL.TE)">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+
+    </div>
+  </div>
+</div>
+
+      
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="https://github.com/memN0ps" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/memN0ps" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            <a href="" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              memN0ps
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2022
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://memn0ps.github.io/">memN0ps</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="https://gohugo.io">Hugo v0.93.1</a> powered &nbsp;&bull;&nbsp; Theme <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a> adapted from <a href="https://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="https://memn0ps.github.io/js/main.js"></script><script> renderMathInElement(document.body); </script><script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script><script src="https://memn0ps.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+
+
+    
+  </body>
+</html>
+

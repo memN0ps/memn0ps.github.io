@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Parallel Syscalls - memN0ps</title>
+  <meta name="description" content="EDR Parallel-asis through Analysis Recently MDSec / Peter Winter-Smtih researched a new technique and released a blog post EDR Parallel-asis through Analysis - MDSec, that show us how to extract system call numbers for 3 critical Windows API functions called NtOpenFile, NtCreateSection and NtMapViewOfSection. Combining these functions allows us to load a fresh copy of NTDLL.dll from disk into memory. Before we deep dive into this technique, there are a few fundamental concepts about Windows Internals and Portable Executable (PE) files to learn.">
+  <meta name="author" content="memN0ps"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "memN0ps",
+    
+    "url": "https:\/\/memn0ps.github.io\/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "https:\/\/memn0ps.github.io\/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/Parallel-Syscalls\/",
+          "name": "Parallel syscalls"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "memN0ps"
+  },
+  "headline": "Parallel Syscalls",
+  "description" : "EDR Parallel-asis through Analysis Recently MDSec \/ Peter Winter-Smtih researched a new technique and released a blog post EDR Parallel-asis through Analysis - MDSec, that show us how to extract system call numbers for 3 critical Windows API functions called NtOpenFile, NtCreateSection and NtMapViewOfSection. Combining these functions allows us to load a fresh copy of NTDLL.dll from disk into memory. Before we deep dive into this technique, there are a few fundamental concepts about Windows Internals and Portable Executable (PE) files to learn.",
+  "inLanguage" : "en",
+  "wordCount":  4464 ,
+  "datePublished" : "2022-02-12T00:00:00",
+  "dateModified" : "2022-02-12T00:00:00",
+  "image" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "https:\/\/memn0ps.github.io\/Parallel-Syscalls\/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "https:\/\/memn0ps.github.io\/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="Parallel Syscalls" />
+<meta property="og:description" content="EDR Parallel-asis through Analysis Recently MDSec / Peter Winter-Smtih researched a new technique and released a blog post EDR Parallel-asis through Analysis - MDSec, that show us how to extract system call numbers for 3 critical Windows API functions called NtOpenFile, NtCreateSection and NtMapViewOfSection. Combining these functions allows us to load a fresh copy of NTDLL.dll from disk into memory. Before we deep dive into this technique, there are a few fundamental concepts about Windows Internals and Portable Executable (PE) files to learn.">
+<meta property="og:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+<meta property="og:url" content="https://memn0ps.github.io/Parallel-Syscalls/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="memN0ps" />
+
+  <meta name="twitter:title" content="Parallel Syscalls" />
+  <meta name="twitter:description" content="EDR Parallel-asis through Analysis Recently MDSec / Peter Winter-Smtih researched a new technique and released a blog post EDR Parallel-asis through Analysis - MDSec, that show us how to extract …">
+  <meta name="twitter:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@memN0ps" />
+  <meta name="twitter:creator" content="@memN0ps" />
+  <link href='https://memn0ps.github.io/avatar-icon.jpg' rel='icon' type='image/x-icon'/>
+  <meta name="generator" content="Hugo 0.93.1" />
+  <link rel="alternate" href="https://memn0ps.github.io/index.xml" type="application/rss+xml" title="memN0ps"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><link rel="stylesheet" href="https://memn0ps.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" /><link rel="stylesheet" href="https://memn0ps.github.io/css/syntax.css" /><link rel="stylesheet" href="https://memn0ps.github.io/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://memn0ps.github.io/">memN0ps</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="memN0ps" href="https://memn0ps.github.io/">
+            <img class="avatar-img" src="https://memn0ps.github.io/avatar-icon.jpg" alt="memN0ps" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>Parallel Syscalls</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on February 12, 2022
+  
+  
+  
+  
+    
+      &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;memN0ps
+    
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <h2 id="edr-parallel-asis-through-analysis">EDR Parallel-asis through Analysis</h2>
+<p>Recently MDSec /  <a href="https://twitter.com/peterwintrsmith">Peter Winter-Smtih</a> researched a new technique and released a blog post <a href="https://www.mdsec.co.uk/2022/01/edr-parallel-asis-through-analysis/">EDR Parallel-asis through Analysis - MDSec</a>, that show us how to extract system call numbers for 3 critical Windows API functions called <code>NtOpenFile</code>, <code>NtCreateSection</code> and <code>NtMapViewOfSection</code>. Combining these functions allows us to load a fresh copy of <code>NTDLL.dll</code> from disk into memory. Before we deep dive into this technique, there are a few fundamental concepts about Windows Internals and Portable Executable (PE) files to learn.</p>
+<p>However, if you feel you are already familiar with Windows Internals, PE Files and system calls, then feel free skip to the Parallel-asis technique.</p>
+<p>PoCs have been made in various languages:</p>
+<ul>
+<li>C++: <a href="https://github.com/mdsecactivebreach/ParallelSyscalls/">https://github.com/mdsecactivebreach/ParallelSyscalls/</a></li>
+<li>Rust: <a href="https://github.com/memN0ps/arsenal-rs/tree/main/parallel_syscalls-rs">https://github.com/memN0ps/arsenal-rs/tree/main/parallel_syscalls-rs</a></li>
+<li>C#: <a href="https://github.com/cube0x0/ParallelSyscalls/">https://github.com/cube0x0/ParallelSyscalls/</a></li>
+<li>NIM: <a href="https://github.com/frkngksl/ParallelNimcalls">https://github.com/frkngksl/ParallelNimcalls</a></li>
+</ul>
+<h1 id="windows-internals-fundamentals">Windows Internals Fundamentals</h1>
+<h2 id="protection-ring">Protection Ring</h2>
+<p>The Windows operating system has layers of privileges within the architecture known as hierarchical levels or protection rings. Regular applications run in Ring 3, known as user-mode, and privileged services run in Ring 0, Kernel mode. However, applications might need to transition from user-mode to kernel-mode.<img src="/Parallel-Syscalls/1.png" alt="1">
+<strong>Credits: <a href="https://en.wikipedia.org/wiki/Protection_ring">Protection ring - Wikipedia</a></strong></p>
+<h2 id="windows-architecture">Windows Architecture</h2>
+<p>High-level diagram view of the Window Architecture:<img src="/Parallel-Syscalls/2.png" alt="2">
+<strong>Credits: <a href="https://resources.infosecinstitute.com/topic/windows-architecture-and-userkernel-mode/">Microsoft</a></strong></p>
+<h2 id="what-are-system-calls">What are system calls</h2>
+<p>A system call or syscall is a mechanism that provides a way to transition from user-mode to kernel-mode. The system call numbers can change between different OS versions or service packs.<img src="/Parallel-Syscalls/3.png" alt="3">
+<strong>Credits: <a href="https://offensivedefence.co.uk/posts/dinvoke-syscalls/">Practical Malware Analysis</a></strong></p>
+<p>To understand system calls better, we can reverse KERNEL32.DLL, KERNELBASE.DLL and <code>NTDLL.dll</code></p>
+<p>Let&rsquo;s take <code>CreateRemoteThreadEx</code> as an example. What happens when we call this function under the hood?</p>
+<p>Inside WinDbg we can see that <code>CreateThreadStub</code> calls <code>CreateRemoteThreadEx</code> by dissembling the function inside <code>KERNEL32.DLL</code>.</p>
+<pre tabindex="0"><code>0:006&gt; uf KERNEL32!CreateThreadStub
+KERNEL32!CreateThreadStub:
+00007ffa`7f6eb5a0 4c8bdc          mov     r11,rsp
+00007ffa`7f6eb5a3 4883ec48        sub     rsp,48h
+00007ffa`7f6eb5a7 448b542470      mov     r10d,dword ptr [rsp+70h]
+00007ffa`7f6eb5ac 488b442478      mov     rax,qword ptr [rsp+78h]
+00007ffa`7f6eb5b1 4181e204000100  and     r10d,10004h
+00007ffa`7f6eb5b8 498943f0        mov     qword ptr [r11-10h],rax
+00007ffa`7f6eb5bc 498363e800      and     qword ptr [r11-18h],0
+00007ffa`7f6eb5c1 458953e0        mov     dword ptr [r11-20h],r10d
+00007ffa`7f6eb5c5 4d894bd8        mov     qword ptr [r11-28h],r9
+00007ffa`7f6eb5c9 4d8bc8          mov     r9,r8
+00007ffa`7f6eb5cc 4c8bc2          mov     r8,rdx
+00007ffa`7f6eb5cf 488bd1          mov     rdx,rcx
+00007ffa`7f6eb5d2 4883c9ff        or      rcx,0FFFFFFFFFFFFFFFFh
+00007ffa`7f6eb5d6 48ff1573760600  call    qword ptr [KERNEL32!_imp_CreateRemoteThreadEx (00007ffa`7f752c50)]
+00007ffa`7f6eb5dd 0f1f440000      nop     dword ptr [rax+rax]
+00007ffa`7f6eb5e2 4883c448        add     rsp,48h
+00007ffa`7f6eb5e6 c3              ret
+</code></pre><p>Searching for the function using IDA Freeware, we can confirm that inside <code>C:\Windows\System32\kernel.dll</code>  the function <code>CreateThreadStub</code> is calling <code>CreateRemoteThreadEx</code> . However, the function <code>CreateRemoteThreadEx</code> is not present inside <code>KERNEL32.DLL</code>.</p>
+<p><img src="/Parallel-Syscalls/4.png" alt="4"></p>
+<p>We can disassemble the <code>CreateRemoteThreadEx</code> function inside <code>KERNELBASE.DLL</code>. Note that this function is huge and has been omitted for simplicity.</p>
+<pre tabindex="0"><code>0:006&gt; uf KERNELBASE!CreateRemoteThreadEx
+KERNELBASE!CreateRemoteThreadEx:
+&lt;...ommitted...&gt;
+00007ffa`7ddf5535 899424e8000000  mov     dword ptr [rsp+0E8h],edx
+00007ffa`7ddf553c 418bc7          mov     eax,r15d
+00007ffa`7ddf553f f7d8            neg     eax
+00007ffa`7ddf5541 481bc9          sbb     rcx,rcx
+00007ffa`7ddf5544 488b842400010000 mov     rax,qword ptr [rsp+100h]
+00007ffa`7ddf554c 4823c8          and     rcx,rax
+00007ffa`7ddf554f 4585ff          test    r15d,r15d
+00007ffa`7ddf5552 490f45c1        cmovne  rax,r9
+00007ffa`7ddf5556 4c8d8424e0010000 lea     r8,[rsp+1E0h]
+00007ffa`7ddf555e 4c89442450      mov     qword ptr [rsp+50h],r8
+00007ffa`7ddf5563 48894c2448      mov     qword ptr [rsp+48h],rcx
+00007ffa`7ddf5568 4889442440      mov     qword ptr [rsp+40h],rax
+00007ffa`7ddf556d 4c894c2438      mov     qword ptr [rsp+38h],r9
+00007ffa`7ddf5572 89542430        mov     dword ptr [rsp+30h],edx
+00007ffa`7ddf5576 488b842408010000 mov     rax,qword ptr [rsp+108h]
+00007ffa`7ddf557e 4889442428      mov     qword ptr [rsp+28h],rax
+00007ffa`7ddf5583 488b842410010000 mov     rax,qword ptr [rsp+110h]
+00007ffa`7ddf558b 4889442420      mov     qword ptr [rsp+20h],rax
+00007ffa`7ddf5590 4d8bce          mov     r9,r14
+00007ffa`7ddf5593 4c8b842418010000 mov     r8,qword ptr [rsp+118h]
+00007ffa`7ddf559b baffff1f00      mov     edx,1FFFFFh
+00007ffa`7ddf55a0 488d8c24b8000000 lea     rcx,[rsp+0B8h]
+00007ffa`7ddf55a8 48ff1599b01800  call    qword ptr [KERNELBASE!_imp_NtCreateThreadEx (00007ffa`7df80648)]
+00007ffa`7ddf55af 0f1f440000      nop     dword ptr [rax+rax]
+00007ffa`7ddf55b4 8bd8            mov     ebx,eax
+00007ffa`7ddf55b6 898424b4000000  mov     dword ptr [rsp+0B4h],eax
+00007ffa`7ddf55bd 33f6            xor     esi,esi
+00007ffa`7ddf55bf 85c0            test    eax,eax
+&lt;...ommitted...&gt;
+</code></pre><p>Searching for the <code>CreateRemoteThreadEx</code> function inside <code>C:\Windows\System32\kernelbase.dll</code> we can see that somewhere inside that function a call to <code>NtCreateThreadEx</code> is made.</p>
+<p><img src="/Parallel-Syscalls/5.png" alt="5"></p>
+<p>We disassemble <code>NtCreateThreadEx</code> function inside <code>NTDLL.dll</code>.</p>
+<pre tabindex="0"><code>0:006&gt; uf NTDLL!NtCreateThreadEx
+ntdll!NtCreateThreadEx:
+00007ffa`805ee570 4c8bd1          mov     r10,rcx
+00007ffa`805ee573 b8c1000000      mov     eax,0C1h
+00007ffa`805ee578 f604250803fe7f01 test    byte ptr [SharedUserData+0x308 (00000000`7ffe0308)],1
+00007ffa`805ee580 7503            jne     ntdll!NtCreateThreadEx+0x15 (00007ffa`805ee585)  Branch
+
+ntdll!NtCreateThreadEx+0x12:
+00007ffa`805ee582 0f05            syscall
+00007ffa`805ee584 c3              ret
+
+ntdll!NtCreateThreadEx+0x15:
+00007ffa`805ee585 cd2e            int     2Eh
+00007ffa`805ee587 c3              ret
+</code></pre><p>Searching for <code>NtCreateThreadEx</code> inside <code>C:\Windows\System32\ntdll.dll</code>, we see that a system call is made (syscall). In this case, the system call number is <code>0C1</code>, but this is Windows version dependent and can change.</p>
+<p><img src="/Parallel-Syscalls/6.png" alt="6"></p>
+<p>When the system call is made, a transition from user-mode is made to kernel-mode and <code>ZwCreateThreadEx</code> is called that is located inside <code>C:\Windows\System32\ntoskrnl.exe</code>. We can confirm this by looking at the system call number <code>0C1</code>.</p>
+<p>We need to enable kernel debugging to search ntoskrnl.exe via WinDbg. After doing so we can disassemble the <code>ZwCreateThreadEx</code> inside <code>C:\Windows\System32\ntoskrnl.exe</code>.</p>
+<pre tabindex="0"><code>0: kd&gt; uf nt!ZwCreateThreadEx
+nt!ZwCreateThreadEx:
+fffff802`783f4ec0 488bc4          mov     rax,rsp
+fffff802`783f4ec3 fa              cli
+fffff802`783f4ec4 4883ec10        sub     rsp,10h
+fffff802`783f4ec8 50              push    rax
+fffff802`783f4ec9 9c              pushfq
+fffff802`783f4eca 6a10            push    10h
+fffff802`783f4ecc 488d053d610000  lea     rax,[nt!KiServiceLinkage (fffff802`783fb010)]
+fffff802`783f4ed3 50              push    rax
+fffff802`783f4ed4 b8c1000000      mov     eax,0C1h
+fffff802`783f4ed9 e962370100      jmp     nt!KiServiceInternal (fffff802`78408640) Branch nt!KiServiceInternal:
+fffff802`78408640 4883ec08        sub     rsp,8
+fffff802`78408644 55              push    rbp
+fffff802`78408645 4881ec58010000  sub     rsp,158h
+fffff802`7840864c 488dac2480000000 lea     rbp,[rsp+80h]
+fffff802`78408654 48899dc0000000  mov     qword ptr [rbp+0C0h],rbx
+fffff802`7840865b 4889bdc8000000  mov     qword ptr [rbp+0C8h],rdi
+fffff802`78408662 4889b5d0000000  mov     qword ptr [rbp+0D0h],rsi
+fffff802`78408669 fb              sti
+fffff802`7840866a 65488b1c2588010000 mov   rbx,qword ptr gs:[188h]
+fffff802`78408673 0f0d8b90000000  prefetchw [rbx+90h]
+fffff802`7840867a 0fb6bb32020000  movzx   edi,byte ptr [rbx+232h]
+fffff802`78408681 40887da8        mov     byte ptr [rbp-58h],dil
+fffff802`78408685 c6833202000000  mov     byte ptr [rbx+232h],0
+fffff802`7840868c 4c8b9390000000  mov     r10,qword ptr [rbx+90h]
+fffff802`78408693 4c8995b8000000  mov     qword ptr [rbp+0B8h],r10
+fffff802`7840869a 4c8d1d7f030000  lea     r11,[nt!KiSystemServiceStart (fffff802`78408a20)]
+fffff802`784086a1 e85abb6000      call    nt!_guard_retpoline_switchtable_jump_r11 (fffff802`78a14200)
+fffff802`784086a6 cc              int     3
+fffff802`784086a7 c3              ret
+</code></pre><p>We can also view this in IDA and can confirm this by looking at the system call number <code>0C1</code>.</p>
+<p>We can see that the <code>KiServiceLinkage</code> kernel function is called, which is just a small stub that executes the ret instruction immediately. Lastly, the <code>KiServiceInternal</code> function is responsible for setting the correct <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/previousmode?redirectedfrom=MSDN">PreviousMode</a>, that is used to indicate that a syscall was called by the kernel, and for traversing the Windows system call table, which is also known as System Service Dispatch Table (SSDT).</p>
+<p><img src="/Parallel-Syscalls/7.png" alt="7"></p>
+<p>This briefly covers the large topic of Windows Internals but can help us in what we need to do to understand something better within Windows.</p>
+<h1 id="introduction-to-hooking-and-unhooking">Introduction to Hooking and Unhooking</h1>
+<p>Hooking is a technique used to manipulate, change, or redirect the program&rsquo;s execution flow to another location in memory. This is something that can be used by malware, AVs and EDRs.</p>
+<p>The most common places to hook are in DLLs such as <code>KERNEL32.dll</code>, <code>KERNELBASE.dll</code> or <code>NTDLL.dll</code> as the most crucial Windows API functions are located inside those DLLs.</p>
+<p><img src="/Parallel-Syscalls/hooking_example.png" alt="hooking_example"></p>
+<p><strong>Credits: <a href="https://kylemistele.medium.com/a-beginners-guide-to-edr-evasion-b98cc076eb9a">Calling CreateRemoteThread via the Windows API</a></strong></p>
+<p>There are different types of hooking, some of them are listed below:</p>
+<ul>
+<li>
+<p><code>MS Detours</code>: This is a library provided by Microsoft that allows us to intercept Win32 functions and re-write the Assembly code for the targeted functions.</p>
+</li>
+<li>
+<p><code>Inline Hooking</code>: This allows us to replace the targeted function&rsquo;s first few bytes (assembly instructions) with a <code>jump</code> instruction to redirect execution flow to another location in memory.</p>
+</li>
+<li>
+<p><code>Import Address Table (IAT) Hooking</code>: The Import Address table is a lookup table of function pointers for functions imported from DLLs or executables. IAT hooking allows us to replace the function address in the Import Address Table with another to redirect the program&rsquo;s execution flow.</p>
+</li>
+</ul>
+<h2 id="unhooking">Unhooking</h2>
+<p>The majority of the EDRs have started to hook things, so why don&rsquo;t we unhook them? Well, we totally can. However, the problem with hooking is that you will still need to use hooked Win32 API functions to do the unhooking business, which may cause the EDR to flag you.</p>
+<p>The <a href="https://twitter.com/TheRealWover">@therealwover</a> has explained some cool bypassing techniques in <a href="https://thewover.github.io/Dynamic-Invoke/">Emulating Covert Operations - Dynamic Invocation (Avoiding PInvoke &amp; API Hooks) – The Wover – Red Teaming, .NET, and random computing topics</a></p>
+<p>For example:</p>
+<p>&ldquo;DInvoke provides you with many options for how to execute unmanaged code.&rdquo;</p>
+<ul>
+<li>
+<p>&ldquo;Want to bypass IAT Hooking for a suspicious function? No problem! Just use GetLibraryAddress or GetExportAdress to find the function by parsing the module’s EAT.&rdquo;</p>
+</li>
+<li>
+<p>&ldquo;Want to avoid calling LoadLibrary and GetProcAddress? Use GetPebLdrModuleEntry to find the module by searching the PEB.&rdquo;</p>
+</li>
+</ul>
+<ul>
+<li>
+<p>&ldquo;Want to avoid inline hooking? Manually map a fresh copy of the module and use it without any userland hooks in place.&rdquo;</p>
+</li>
+<li>
+<p>&ldquo;Want to bypass all userland hooking without leaving a PE suspiciously floating in memory? Go native and use a syscall!&rdquo;</p>
+</li>
+</ul>
+<p>More information about hooking, unhooking, system calls and more (exercise for the reader):</p>
+<ul>
+<li><a href="https://thewover.github.io/Dynamic-Invoke/">https://thewover.github.io/Dynamic-Invoke/</a></li>
+</ul>
+<ul>
+<li>
+<p><a href="https://guidedhacking.com/threads/how-to-hook-functions-code-detouring-guide.14185/">https://guidedhacking.com/threads/how-to-hook-functions-code-detouring-guide.14185/</a></p>
+</li>
+<li>
+<p><a href="https://www.mdsec.co.uk/2020/08/firewalker-a-new-approach-to-generically-bypass-user-space-edr-hooking/">https://www.mdsec.co.uk/2020/08/firewalker-a-new-approach-to-generically-bypass-user-space-edr-hooking/</a></p>
+</li>
+<li>
+<p><a href="https://posts.specterops.io/adventures-in-dynamic-evasion-1fe0bac57aa">https://posts.specterops.io/adventures-in-dynamic-evasion-1fe0bac57aa</a></p>
+</li>
+<li>
+<p><a href="https://jhalon.github.io/utilizing-syscalls-in-csharp-1/">https://jhalon.github.io/utilizing-syscalls-in-csharp-1/</a></p>
+</li>
+<li>
+<p><a href="https://jhalon.github.io/utilizing-syscalls-in-csharp-2/">https://jhalon.github.io/utilizing-syscalls-in-csharp-2/</a></p>
+</li>
+<li>
+<p><a href="https://blog.nviso.eu/2021/10/21/kernel-karnage-part-1/">https://blog.nviso.eu/2021/10/21/kernel-karnage-part-1/</a></p>
+</li>
+<li>
+<p><a href="https://jmpesp.me/malware-analysis-syscalls-example/">https://jmpesp.me/malware-analysis-syscalls-example/</a></p>
+</li>
+<li>
+<p><a href="https://github.com/Mr-Un1k0d3r/EDRs">https://github.com/Mr-Un1k0d3r/EDRs</a></p>
+</li>
+</ul>
+<h2 id="system-calls-directly">System Calls Directly</h2>
+<p>Rather than calling the functions directly from <code>KERNEL32.dll</code> or <code>NTDLL.dll</code>, you might think, can&rsquo;t we use the system call numbers directly? Yes, sure you can. However,  as we have seen earlier, the system call number is different for each function and can change between OS and service pack versions. So probably not a good idea to hard code the system call number.</p>
+<p>The Assembly code snippet below shows what the system call number for the <code>ntdll!NtOpenProcess</code> functions looks like for the present version of Windows. The Assembly code is usually the same for all functions, but the number <code>26</code> will be replaced with another, depending on the function, OS and service pack.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">mov</span> <span class="n">r10</span><span class="p">,</span><span class="n">rcx</span>             <span class="c1">// 0x4c 0x8b 0xd1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">mov</span> <span class="n">eax</span><span class="p">,</span> <span class="mi">26</span><span class="n">h</span>            <span class="c1">// 0xb8 xyz xyz 0x00 0x00
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">syscall</span>                 <span class="c1">// 0x0f 0x05   
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">ret</span>                     <span class="c1">// 0xc3
+</span></span></span></code></pre></div><p>Another problem would be to get the system call number at run time of the program. To get the system call number at run time, we will have to do the following:</p>
+<ul>
+<li>Get the base address of <code>NTDLL.dll</code> using <a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlea">GetModuleHandleA</a>, which retrieves a module handle for the specified module. Although this can be hooked, we would want to avoid using this.</li>
+<li>Go through the Export Address Table (EAT) of the <code>NTDLL.dll</code> to get the address of the functions we need.</li>
+<li>Extract the system call numbers from the address of the function.</li>
+<li>Perform the system call.</li>
+</ul>
+<p>So how do we emulate <code>GetModuleHandleA</code> function? Keep reading for the answer.</p>
+<h1 id="introduction-to-the-thread-environment-block-teb--process-environment-block-peb">Introduction to the Thread Environment Block (TEB) / Process Environment Block (PEB)</h1>
+<p>Each process has a <code>Thread Environment block (TEB)</code> and inside the TEB we can find the <code>Process Environment Block (PEB)</code>. <a href="https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-teb">&ldquo;The Thread Environment Block (TEB structure) describes the state of a thread.&rdquo;</a></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_TEB</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span> <span class="n">Reserved1</span><span class="p">[</span><span class="mi">12</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PPEB</span>  <span class="n">ProcessEnvironmentBlock</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span> <span class="n">Reserved2</span><span class="p">[</span><span class="mi">399</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>  <span class="n">Reserved3</span><span class="p">[</span><span class="mi">1952</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span> <span class="n">TlsSlots</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>  <span class="n">Reserved4</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span> <span class="n">Reserved5</span><span class="p">[</span><span class="mi">26</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span> <span class="n">ReservedForOle</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span> <span class="n">Reserved6</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span> <span class="n">TlsExpansionSlots</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">TEB</span><span class="p">,</span> <span class="o">*</span><span class="n">PTEB</span><span class="p">;</span>
+</span></span></code></pre></div><p>Inside the PEB we have a data structure called <code>_PEB_LDR_DATA</code>: <a href="https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-peb">&ldquo;Contains information about the loaded modules for the process.&rdquo;</a></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_PEB</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>                          <span class="n">Reserved1</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>                          <span class="n">BeingDebugged</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>                          <span class="n">Reserved2</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>                         <span class="n">Reserved3</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PPEB_LDR_DATA</span>                 <span class="n">Ldr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PRTL_USER_PROCESS_PARAMETERS</span>  <span class="n">ProcessParameters</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>                         <span class="n">Reserved4</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>                         <span class="n">AtlThunkSListPtr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>                         <span class="n">Reserved5</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ULONG</span>                         <span class="n">Reserved6</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>                         <span class="n">Reserved7</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ULONG</span>                         <span class="n">Reserved8</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ULONG</span>                         <span class="n">AtlThunkSListPtr32</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>                         <span class="n">Reserved9</span><span class="p">[</span><span class="mi">45</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>                          <span class="n">Reserved10</span><span class="p">[</span><span class="mi">96</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PPS_POST_PROCESS_INIT_ROUTINE</span> <span class="n">PostProcessInitRoutine</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>                          <span class="n">Reserved11</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>                         <span class="n">Reserved12</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ULONG</span>                         <span class="n">SessionId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">PEB</span><span class="p">,</span> <span class="o">*</span><span class="n">PPEB</span><span class="p">;</span>
+</span></span></code></pre></div><p>Inside the <code>_PEB_LDR_DATA</code> data structure we have something called <code>InMemoryOrderModuleList</code> which is: <a href="https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-peb_ldr_data">&ldquo;The head of a doubly-linked list that contains the loaded modules for the process. Each item in the list is a pointer to an LDR_DATA_TABLE_ENTRY structure. For more information, see Remarks.&rdquo;</a></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_PEB_LDR_DATA</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>       <span class="n">Reserved1</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">PVOID</span>      <span class="n">Reserved2</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LIST_ENTRY</span> <span class="n">InMemoryOrderModuleList</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">PEB_LDR_DATA</span><span class="p">,</span> <span class="o">*</span><span class="n">PPEB_LDR_DATA</span><span class="p">;</span>
+</span></span></code></pre></div><p><a href="https://docs.microsoft.com/en-us/windows/win32/api/ntdef/ns-ntdef-list_entry">&ldquo;A <strong>LIST_ENTRY</strong> structure describes an entry in a doubly linked list or serves as the header for such a list.&rdquo;</a></p>
+<p>Inside <code>InMemoryOrderModuleList LIST_ENTRY</code>, we have <code>FLINK</code> and <code>BLINK</code>. The <code>FLINK</code> member points to the next entry in the <code>InMemoryOrderModuleList</code>, and the <code>BLINK</code> member points to the previous entry in the <code>InMemoryOrderModuleList</code>.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_LIST_ENTRY</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="nc">_LIST_ENTRY</span> <span class="o">*</span><span class="n">Flink</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="nc">_LIST_ENTRY</span> <span class="o">*</span><span class="n">Blink</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">LIST_ENTRY</span><span class="p">,</span> <span class="o">*</span><span class="n">PLIST_ENTRY</span><span class="p">,</span> <span class="n">PRLIST_ENTRY</span><span class="p">;</span>
+</span></span></code></pre></div><p>Why is this important to us? <code>_TEB -&gt; _PEB -&gt; _PEB_LDR_DATA -&gt; InMemoryOrderModuleList</code> is important to us because it contains a list that includes the loaded modules for the process. When we access <code>InMemoryOrderModuleList.FLINK</code>, it will point towards the <code>_LDR_DATA_TABLE_ENTRY</code> data structure and contain information about the first loaded module in the process.</p>
+<p>The <code>LDR_DATA_TABLE_ENTRY</code> structure is defined as follows:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_LDR_DATA_TABLE_ENTRY</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">PVOID</span> <span class="n">Reserved1</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="n">LIST_ENTRY</span> <span class="n">InMemoryOrderLinks</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">PVOID</span> <span class="n">Reserved2</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="n">PVOID</span> <span class="n">DllBase</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">PVOID</span> <span class="n">EntryPoint</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">PVOID</span> <span class="n">Reserved3</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">UNICODE_STRING</span> <span class="n">FullDllName</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">BYTE</span> <span class="n">Reserved4</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="n">PVOID</span> <span class="n">Reserved5</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="k">union</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ULONG</span> <span class="n">CheckSum</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">PVOID</span> <span class="n">Reserved6</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ULONG</span> <span class="n">TimeDateStamp</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">LDR_DATA_TABLE_ENTRY</span><span class="p">,</span> <span class="o">*</span><span class="n">PLDR_DATA_TABLE_ENTRY</span><span class="p">;</span>
+</span></span></code></pre></div><p>To sum this up, if we want to get the base address of a module (dll) inside a process. We need to go through <code>_TEB  -&gt; _PEB -&gt;  _PEB_LDR_DATA -&gt; InMemoryOrderModuleList.FLINK -&gt; _LDR_DATA_TABLE_ENTRY -&gt; DllBase</code></p>
+<p>Here is an excellent diagram that shows what I&rsquo;ve explained above. However, <code>NTDLL.dll</code> may not be the first module in the list:</p>
+<p><img src="/Parallel-Syscalls/peb.png" alt="PE Structure"></p>
+<p><strong>Credits <a href="https://mohamed-fakroud.gitbook.io/red-teamings-dojo/shellcoding/leveraging-from-pe-parsing-technique-to-write-x86-shellcode">Module Base</a></strong></p>
+<h1 id="introduction-to-portable-executable-files">Introduction to Portable Executable Files</h1>
+<p>The data structures we will talk about are essential for us and will become apparent later in this post.</p>
+<p>Here are two diagrams of what we are about to discuss (Portable Executable File Structure):</p>
+<p><img src="/Parallel-Syscalls/PE-Structure.png" alt="PE Structure">
+<strong>Credits: <a href="https://tech-zealots.com/wp-content/uploads/2018/05/PE-Structure.png">PE Structure</a></strong></p>
+<p><img src="/Parallel-Syscalls/pe_file.png" alt="4"></p>
+<p><strong>Credits: <a href="https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/">PE Structure</a></strong></p>
+<h3 id="_image_dos_headerhttps0xrickgithubiowin-internalspe3"><a href="https://0xrick.github.io/win-internals/pe3/">_IMAGE_DOS_HEADER</a></h3>
+<p>Every Portable Executable (PE) file starts with a small MS-DOS executable that was required in the early days of Windows and this small stub executable would, at a minimum, display a message saying that Windows was required to run the application. The default error message is “This program cannot be run in DOS mode.”
+The first bytes of the Portable Executable (PE) file are, the traditional MS-DOS header, also called the IMAGE_DOS_HEADER structure.</p>
+<p>There are two important values in this header. The first is the <code>e_magic</code> variable of type <code>WORD (16-bit)</code> value, that must be <code>0x5A4D</code>. This value is <code>“MZ”</code> in ASCII which is the initials of Mark Zbikowski.
+The second value is <code>e_lfanew</code> at offset <code>3CH</code> that contains the file offset of the start of the Portable Executable (PE) file which is also called <code>IMAGE_NT_HEADERS</code> structure.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_IMAGE_DOS_HEADER</span> <span class="p">{</span>      <span class="c1">// DOS .EXE header
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_magic</span><span class="p">;</span>                     <span class="c1">// Magic number
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_cblp</span><span class="p">;</span>                      <span class="c1">// Bytes on last page of file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_cp</span><span class="p">;</span>                        <span class="c1">// Pages in file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_crlc</span><span class="p">;</span>                      <span class="c1">// Relocations
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_cparhdr</span><span class="p">;</span>                   <span class="c1">// Size of header in paragraphs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_minalloc</span><span class="p">;</span>                  <span class="c1">// Minimum extra paragraphs needed
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_maxalloc</span><span class="p">;</span>                  <span class="c1">// Maximum extra paragraphs needed
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_ss</span><span class="p">;</span>                        <span class="c1">// Initial (relative) SS value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_sp</span><span class="p">;</span>                        <span class="c1">// Initial SP value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_csum</span><span class="p">;</span>                      <span class="c1">// Checksum
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_ip</span><span class="p">;</span>                        <span class="c1">// Initial IP value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_cs</span><span class="p">;</span>                        <span class="c1">// Initial (relative) CS value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_lfarlc</span><span class="p">;</span>                    <span class="c1">// File address of relocation table
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_ovno</span><span class="p">;</span>                      <span class="c1">// Overlay number
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_res</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>                    <span class="c1">// Reserved words
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_oemid</span><span class="p">;</span>                     <span class="c1">// OEM identifier (for e_oeminfo)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_oeminfo</span><span class="p">;</span>                   <span class="c1">// OEM information; e_oemid specific
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WORD</span>   <span class="n">e_res2</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>                  <span class="c1">// Reserved words
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">LONG</span>   <span class="n">e_lfanew</span><span class="p">;</span>                    <span class="c1">// File address of new exe header
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">}</span> <span class="n">IMAGE_DOS_HEADER</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_DOS_HEADER</span><span class="p">;</span>
+</span></span></code></pre></div><h3 id="_image_nt_headershttpsdocsmicrosoftcomen-uswindowswin32apiwinntns-winnt-image_nt_headers32"><a href="https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32">_IMAGE_NT_HEADERS</a></h3>
+<p>The Portable Executable Header is a structure of structures that is formed by combining together a few other structures. The signature of the <code>IMAGE_NT_HEADERS</code> is <code>50450000h (“PE\0\0” in ASCII)</code>. The <code>IMAGE_OPTIONAL_HEADER</code> is important to us in this case. See MSDN documentation for more information about structures not explained in this post.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_IMAGE_NT_HEADERS</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                   <span class="n">Signature</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">IMAGE_FILE_HEADER</span>       <span class="n">FileHeader</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">IMAGE_OPTIONAL_HEADER32</span> <span class="n">OptionalHeader</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">IMAGE_NT_HEADERS32</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_NT_HEADERS32</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_IMAGE_NT_HEADERS64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">DWORD</span> <span class="n">Signature</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">IMAGE_FILE_HEADER</span> <span class="n">FileHeader</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">IMAGE_OPTIONAL_HEADER64</span> <span class="n">OptionalHeader</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">IMAGE_NT_HEADERS64</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_NT_HEADERS64</span><span class="p">;</span>
+</span></span></code></pre></div><h3 id="_image_optional_headerhttpsdocsmicrosoftcomen-uswindowswin32apiwinntns-winnt-image_optional_header32"><a href="https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header32">_IMAGE_OPTIONAL_HEADER</a></h3>
+<p>The <code>_IMAGE_OPTIONAL_HEADER</code> structure contains important information such as <code>AddressOfEntryPoint</code> which holds the Relative Virtual Address (RVA) of the EntryPoint (EP) for the module. This structure also has the <code>Magic (WORD)</code> member which defines if the module is 32 or 64-bit. A Relative Virtual Address (RVA) is the virtual address minus the base address of a file image, once an object from the file is loaded in memory.</p>
+<p>The <code>BaseOfCode</code> and <code>BaseOfData</code> members hold the Relative Virtual Address (RVA) of the starting of the <code>.code</code> and <code>.data</code> sections.</p>
+<p>The <code>ImageBase</code> member contains the base address of the module which is the preferred <code>Virtual Address (VA)</code> of where the Portable Executable (PE) file will be loaded in memory. The Virtual Address (VA) by default is <code>0x00400000</code> for applications and <code>0x10000000</code> for DLLs.</p>
+<p>The most important member for us in this scenario is the <code>DataDirectory</code> array member that is a pointer to the first <code>IMAGE_DATA_DIRECTORY</code> structure. For example, the index number of the desired directory entry can be: <code>IMAGE_DIRECTORY_ENTRY_EXPORT (index 0)</code> which is the export directory or <code>IMAGE_DIRECTORY_ENTRY_IAT (index 12)</code>, which is <code>Import address table (IAT)</code> etc&hellip; More information on MSDN documentation.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_IMAGE_OPTIONAL_HEADER</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">Magic</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>                 <span class="n">MajorLinkerVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">BYTE</span>                 <span class="n">MinorLinkerVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfCode</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfInitializedData</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfUninitializedData</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">AddressOfEntryPoint</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">BaseOfCode</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">BaseOfData</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">ImageBase</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SectionAlignment</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">FileAlignment</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">MajorOperatingSystemVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">MinorOperatingSystemVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">MajorImageVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">MinorImageVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">MajorSubsystemVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">MinorSubsystemVersion</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">Win32VersionValue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfImage</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfHeaders</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">CheckSum</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">Subsystem</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WORD</span>                 <span class="n">DllCharacteristics</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfStackReserve</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfStackCommit</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfHeapReserve</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">SizeOfHeapCommit</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">LoaderFlags</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span>                <span class="n">NumberOfRvaAndSizes</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">IMAGE_DATA_DIRECTORY</span> <span class="n">DataDirectory</span><span class="p">[</span><span class="n">IMAGE_NUMBEROF_DIRECTORY_ENTRIES</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">IMAGE_OPTIONAL_HEADER32</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_OPTIONAL_HEADER32</span><span class="p">;</span>
+</span></span></code></pre></div><h3 id="_image_data_directoryhttpsdocsmicrosoftcomen-uswindowswin32apiwinntns-winnt-image_data_directory"><a href="https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory">_IMAGE_DATA_DIRECTORY</a></h3>
+<p>Each <code>_IMAGE_DATA_DIRECTORY_STRUCTURE</code> (16 by default), contains the members <code>VirtualAddress (DWORD)</code> and <code>Size (DWORD)</code>, which is Relative Virtual Address (RVA) and size of the data inside the Portable Executable (PE) Image at runtime.</p>
+<p>A few important examples would be <code>ExportTableAddress</code> that has the table of exported functions, <code>ImportTableAddress</code> which has table of imported functions, <code>ResourceTable</code> that has the table of resources like images embedded in the PE file and <code>ImportAddressTable (IAT)</code> which contains the addresses of the imported functions at runtime.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_IMAGE_DATA_DIRECTORY</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span> <span class="n">VirtualAddress</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">DWORD</span> <span class="n">Size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">IMAGE_DATA_DIRECTORY</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_DATA_DIRECTORY</span><span class="p">;</span>
+</span></span></code></pre></div><h3 id="_image_section_headerhttpsdocsmicrosoftcomen-uswindowswin32apiwinntns-winnt-image_section_header"><a href="https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_section_header">_IMAGE_SECTION_HEADER</a></h3>
+<p>The section table is an array of <code>_IMAGE_SECTION_HEADER</code> structures and each structure will contain information about its associated section, such as address, size and characteristics that describe the access permissions inside that section. The section name can be at most 8 ASCII chars long which means that this member will always take up 8 bytes of memory.</p>
+<p>Types:</p>
+<ul>
+<li>
+<p><code>.text / code</code> – Normally the first section that contains executable code for the application and the entry point. Also is generally read-only.</p>
+</li>
+<li>
+<p><code>.data</code> - This will contain initialized data for the application such as strings, global variable and local static variable.</p>
+</li>
+<li>
+<p><code>.bss</code> - This contains uninitialized static and global variables.
+<code>.rdata or .idata</code> - This is usually where the import address table is located, which is the table that lists the Win32 APIs such as names and associated DLLs used by the application.</p>
+</li>
+<li>
+<p><code>.rsrc</code> - Contains resources for the module such as images used for the application User Interface.</p>
+</li>
+<li>
+<p><code>.reloc</code> - Hold the entries for all base relocations in the image. The Base Relocation Table field in the optional header data directories gives the number of bytes in the base relocation table.</p>
+</li>
+</ul>
+<p>This is a non-exhausted list and does not always imply that they will be used for the same purpose or have the same name as it can be changed by the author.</p>
+<pre tabindex="0"><code>typedef struct _IMAGE_SECTION_HEADER {
+  BYTE  Name[IMAGE_SIZEOF_SHORT_NAME];
+  union {
+    DWORD PhysicalAddress;
+    DWORD VirtualSize;
+  } Misc;
+  DWORD VirtualAddress;
+  DWORD SizeOfRawData;
+  DWORD PointerToRawData;
+  DWORD PointerToRelocations;
+  DWORD PointerToLinenumbers;
+  WORD  NumberOfRelocations;
+  WORD  NumberOfLinenumbers;
+  DWORD Characteristics;
+} IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
+</code></pre><h3 id="_image_export_directoryhttpsalicecliment-pommeretredpostsdirect-syscalls-hells-halos-syswhispers2"><a href="https://alice.climent-pommeret.red/posts/direct-syscalls-hells-halos-syswhispers2/">_IMAGE_EXPORT_DIRECTORY</a></h3>
+<p>Once we have the DLL base address we can need to parse the <code>_IMAGE_EXPORT_DIRECTORY</code> data structure that contains important information, such as function addresses and function names. <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#export-directory-table">&ldquo;The export symbol information begins with the export directory table, which describes the remainder of the export symbol information. The export directory table contains address information that is used to resolve imports to the entry points within this image.&rdquo;</a></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="nc">_IMAGE_EXPORT_DIRECTORY</span> <span class="p">{</span>              
+</span></span><span class="line"><span class="cl">    <span class="n">DWORD</span>   <span class="n">Characteristics</span><span class="p">;</span>            
+</span></span><span class="line"><span class="cl">    <span class="n">DWORD</span>   <span class="n">TimeDateStamp</span><span class="p">;</span>                
+</span></span><span class="line"><span class="cl">    <span class="n">WORD</span>    <span class="n">MajorVersion</span><span class="p">;</span>             
+</span></span><span class="line"><span class="cl">    <span class="n">WORD</span>    <span class="n">MinorVersion</span><span class="p">;</span>             
+</span></span><span class="line"><span class="cl">    <span class="n">DWORD</span>   <span class="n">Name</span><span class="p">;</span>                   <span class="c1">// The name of the Dll
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">DWORD</span>   <span class="n">Base</span><span class="p">;</span>                   <span class="c1">// Number to add to the values found in AddressOfNameOrdinals to retrieve the &#34;real&#34; Ordinal number of the function (by real I mean used to call it by ordinals).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">DWORD</span>   <span class="n">NumberOfFunctions</span><span class="p">;</span>      <span class="c1">// Number of all exported functions      
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">DWORD</span>   <span class="n">NumberOfNames</span><span class="p">;</span>          <span class="c1">// Number of functions exported by name      
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">DWORD</span>   <span class="n">AddressOfFunctions</span><span class="p">;</span>     <span class="c1">// Export Address Table. Address of the functions addresses array.   
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">DWORD</span>   <span class="n">AddressOfNames</span><span class="p">;</span>         <span class="c1">// Export Name table. Address of the functions names array.        
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">DWORD</span>   <span class="n">AddressOfNameOrdinals</span><span class="p">;</span>  <span class="c1">// Export sequence number table.  Address of the Ordinals (minus the value of Base) array.             
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span> <span class="n">IMAGE_EXPORT_DIRECTORY</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_EXPORT_DIRECTORY</span><span class="p">;</span>    
+</span></span></code></pre></div><p><strong>Credits: <a href="https://alice.climent-pommeret.red/posts/direct-syscalls-hells-halos-syswhispers2/">_IMAGE_EXPORT_DIRECTORY</a></strong></p>
+<p>Here is an excellent image that shows an overview of what we have talked about above.</p>
+<p><img src="/Parallel-Syscalls/pe_diagram.jpg" alt="PE Structures"></p>
+<p><strong>Credits: <a href="https://secureyourit.co.uk/wp/2020/04/12/walking-the-peb-with-vba-x64/">Overview of the PE Headers</a></strong></p>
+<p>There are 3 things we are intersted in here, the <code>AddressOfFunctions</code>, <code>AddressOfNames</code> and <code>AddressOfNameOrdinals</code>arrays.</p>
+<p>Each index in the array contains a unique entry linked with each other. For example, if we decided to loop through <code>AddressOfNames</code> by the length of <code>NumberOfNames</code> and we find the function we are looking for, such as <code>NtCreateRemoteThread</code> then we can access the function&rsquo;s address by indexing the <code>AddressOfNameOrdinals</code> array in the same iteration of the loop which will hold the index of the corresponding address of the function in the <code>AddressOfFunctions</code> array.</p>
+<p>For example, if the <code>AddressOfNames[name4]</code> contains the function name we want then we can access the <code>AddressOfNameOrdinals[8]</code> (same index <code>AddressOfNames</code>) which will hold the index of the of the function in the <code>AddressOfFunctions</code> array and that index in <code>AddressOfFunctions</code> could be <code>AddressOfFunctions[address8]</code> as shown in the diagram. Although, the address we will get is called the <code>Relative Virtual Address (RVA)</code>, which is the virtual address of an object not including the image base address. To get the real address of the function in memory, we have to add the image base address with <code>Relative Virtual Address (RVA)</code>.</p>
+<p><img src="/Parallel-Syscalls/eat.png" alt="EAT"></p>
+<p><strong>Credits: <a href="https://resources.infosecinstitute.com/topic/the-export-directory/">Export Directory</a></strong></p>
+<p>To sum this up, if we want to get the base address of a module (dll) inside a process, we need to go through: <code>_TEB -&gt; _PEB -&gt; _PEB_LDR_DATA -&gt; InMemoryOrderModuleList.FLINK -&gt; _LDR_DATA_TABLE_ENTRY -&gt; DllBase</code>.</p>
+<p>To get the addresses of functions within that module we need to go through the PE headers: 
+<code>_IMAGE_DOS_HEADER.e_lfanew -&gt; _IMAGE_NT_HEADERS.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress -&gt; _IMAGE_EXPORT_DIRECTORY.AddressOfNames</code> or <code>_IMAGE_EXPORT_DIRECTORY.AddressOfFunctions</code> or <code>_IMAGE_EXPORT_DIRECTORY.AddressOfOrdinals</code>.</p>
+<p>More information about Portable Executable File and Export Directory Table (exercise for the reader):</p>
+<ul>
+<li>
+<p><a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format">https://docs.microsoft.com/en-us/windows/win32/debug/pe-format</a></p>
+</li>
+<li>
+<p><a href="https://0xrick.github.io/win-internals/pe5/">https://0xrick.github.io/win-internals/pe5/</a></p>
+</li>
+<li>
+<p><a href="https://0xevilc0de.com/locating-dll-name-from-the-process-environment-block-peb/">https://0xevilc0de.com/locating-dll-name-from-the-process-environment-block-peb/</a></p>
+</li>
+<li>
+<p><a href="https://resources.infosecinstitute.com/topic/the-export-directory/">https://resources.infosecinstitute.com/topic/the-export-directory/</a></p>
+</li>
+<li>
+<p><a href="https://blogs.keysight.com/blogs/tech/nwvs.entry.html/2020/07/27/debugging_malwarewi-hk5u.html">https://blogs.keysight.com/blogs/tech/nwvs.entry.html/2020/07/27/debugging_malwarewi-hk5u.html</a></p>
+</li>
+<li>
+<p><a href="https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/">https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/</a></p>
+</li>
+<li>
+<p><a href="https://mohamed-fakroud.gitbook.io/red-teamings-dojo/shellcoding/leveraging-from-pe-parsing-technique-to-write-x86-shellcode">https://mohamed-fakroud.gitbook.io/red-teamings-dojo/shellcoding/leveraging-from-pe-parsing-technique-to-write-x86-shellcode</a></p>
+</li>
+<li>
+<p><a href="https://alice.climent-pommeret.red/posts/direct-syscalls-hells-halos-syswhispers2/">https://alice.climent-pommeret.red/posts/direct-syscalls-hells-halos-syswhispers2/</a></p>
+</li>
+</ul>
+<h2 id="parallel-asis">Parallel-asis</h2>
+<p>Enough of this madness! Let&rsquo;s get down to real business. Please note that this is an oversimplification of the technique, and MDSec has done a much better job explaining it.</p>
+<p>Microsoft has implemented Parallel DLL loading from the starting of Windows 10, which allows loading DLLs recursively in parallel rather than synchronously running single-threaded. To increase performance on Windows 10 upon process initialization, a pool of worker threads are created, and the parent process defines the number of threads. The master thread is referred to as <code>ntdll!LdrInitializeThunk</code>, and any other threads in the thread pool created by the master are called a worker threads.</p>
+<pre tabindex="0"><code>0:008&gt; u ntdll!LdrInitializeThunk
+ntdll!LdrInitializeThunk:
+00007ffc`6477a8b0 4053            push    rbx
+00007ffc`6477a8b2 4883ec20        sub     rsp,20h
+00007ffc`6477a8b6 488bd9          mov     rbx,rcx
+00007ffc`6477a8b9 e81a000000      call    ntdll!LdrpInitialize (00007ffc`6477a8d8)
+00007ffc`6477a8be b201            mov     dl,1
+00007ffc`6477a8c0 488bcb          mov     rcx,rbx
+00007ffc`6477a8c3 e8d8960200      call    ntdll!NtContinue (00007ffc`647a3fa0)
+00007ffc`6477a8c8 8bc8            mov     ecx,eax
+</code></pre><p>What is of interest to us attackers is that to mitigate parallel loading hazards such as corrupt memory or compatibility, Windows will try and see if a process is hooked before enabling parallel loading by getting <code>ntdll!LdrpEnableParallelLoading</code> to call <code>ntdll!LdrpDetectDetour</code> and if a hook is detected, then function <code>ntdll!LdrpDetectDetour</code> is set to true and the thread pool is drained and released.</p>
+<pre tabindex="0"><code>0:008&gt; u ntdll!LdrpEnableParallelLoading
+ntdll!LdrpEnableParallelLoading:
+00007ffc`64773b60 48895c2408      mov     qword ptr [rsp+8],rbx
+00007ffc`64773b65 57              push    rdi
+00007ffc`64773b66 4883ec70        sub     rsp,70h
+00007ffc`64773b6a 8bf9            mov     edi,ecx
+00007ffc`64773b6c e8ab090000      call    ntdll!LdrpDetectDetour (00007ffc`6477451c)
+00007ffc`64773b71 85ff            test    edi,edi
+00007ffc`64773b73 0f8503850500    jne     ntdll!LdrpEnableParallelLoading+0x5851c (00007ffc`647cc07c)
+00007ffc`64773b79 e872c6fdff      call    ntdll!RtlGetSuiteMask (00007ffc`647501f0)
+
+0:008&gt; u ntdll!LdrpDetectDetour
+ntdll!LdrpDetectDetour:
+00007ffc`6477451c 4057            push    rdi
+00007ffc`6477451e 4883ec30        sub     rsp,30h
+00007ffc`64774522 803d375b100000  cmp     byte ptr [ntdll!LdrpDetourExist (00007ffc`6487a060)],0
+00007ffc`64774529 757f            jne     ntdll!LdrpDetectDetour+0x8e (00007ffc`647745aa)
+00007ffc`6477452b 33d2            xor     edx,edx
+00007ffc`6477452d 488d0d0c661000  lea     rcx,[ntdll!LdrpThunkSignature (00007ffc`6487ab40)]
+00007ffc`64774534 4c8d054d8d0b00  lea     r8,[ntdll!LdrpCriticalLoaderFunctions (00007ffc`6482d288)]
+00007ffc`6477453b 8d7a01          lea     edi,[rdx+1]
+</code></pre><p>But how is this important to us attackers again? Well, the process of when and how the hooks are examined are essential to us, which is defined in <code>ntdll!LdrpCriticalLoaderFunctions</code>.</p>
+<p>The first 16 bytes of the following functions are examined to see if they have been modified by comparing against the known good bytes in the <code>ntdll!LdrpThunkSignature</code> array, which is stored in the <code>.data</code> section of<code>NTDLL.dll</code>. However, the <code>ntdll!LdrpThunkSignature</code> array is not initialised until <code>NTDLL.dll</code> is mapped in the process.</p>
+<ul>
+<li>ntdll!NtOpenFile</li>
+<li>ntdll!NtCreateSection</li>
+<li>ntdll!ZqQueryAttributes</li>
+<li>ntdll!NtOpenSection</li>
+<li>ntdll!ZwMapViewOfSection</li>
+</ul>
+<pre tabindex="0"><code>0:008&gt; u ntdll!LdrpCriticalLoaderFunctions
+ntdll!LdrpCriticalLoaderFunctions:
+00007ffc`6482d288 a03d7a64fc7f000080 mov   al,byte ptr [8000007FFC647A3Dh]
+00007ffc`6482d291 407a64          jp      ntdll!RtlpMemoryZoneCriticalRoutines+0x48 (00007ffc`6482d2f8)
+00007ffc`6482d294 fc              cld
+00007ffc`6482d295 7f00            jg      ntdll!LdrpCriticalLoaderFunctions+0xf (00007ffc`6482d297)
+00007ffc`6482d297 00e0            add     al,ah
+00007ffc`6482d299 3e7a64          ht jp   ntdll!RtlpMemoryZoneCriticalRoutines+0x50 (00007ffc`6482d300)
+00007ffc`6482d29c fc              cld
+00007ffc`6482d29d 7f00            jg      ntdll!LdrpCriticalLoaderFunctions+0x17 (00007ffc`6482d29f)
+</code></pre><p>This should immediately ring a bell for us attackers. If not, then don&rsquo;t worry, but the question that comes to mind is that why are the first 16 bytes of those critical functions compared with <code>ntdll!LdrpThunkSignature</code> and how? Does that mean that <code>ntdll!LdrpThunkSignature</code> array will have the system call numbers for <code>ntdll!NtOpenFile</code>, <code>ntdll!NtCreateSection</code> and <code>ntdll!NtMapViewOfSection</code>? What can we do with those functions or have been doing in the past ;) ?</p>
+<p>Let&rsquo;s take a look then :)</p>
+<p>W00TW00T! Would you look at that! Looking at <code>LdrpThunkSignature</code> shows that it hold 3 system call numbers.</p>
+<pre tabindex="0"><code>ntdll!LdrpThunkSignature:
+00007ffc`6487ab40 4c8bd1          mov     r10,rcx
+00007ffc`6487ab43 b833000000      mov     eax,33h
+00007ffc`6487ab48 f604250803fe7f01 test    byte ptr [SharedUserData+0x308 (00000000`7ffe0308)],1
+00007ffc`6487ab50 4c8bd1          mov     r10,rcx
+00007ffc`6487ab53 b84a000000      mov     eax,4Ah
+00007ffc`6487ab58 f604250803fe7f01 test    byte ptr [SharedUserData+0x308 (00000000`7ffe0308)],1
+00007ffc`6487ab60 4c8bd1          mov     r10,rcx
+00007ffc`6487ab63 b83d000000      mov     eax,3Dh
+</code></pre><p>At the time of the blog the system call numbers <code>0x33</code>, <code>0x4a</code> and <code>0x3D</code> are for <code>ntdll!NtOpenFile</code>, <code>ntdll!NtCreateSection</code> and <code>ntdll!NtMapViewOfSection</code>. We can double check using WinDbg.</p>
+<pre tabindex="0"><code>0:008&gt; u ntdll!NtOpenFile
+ntdll!NtOpenFile:
+00007ffc`647a3da0 4c8bd1          mov     r10,rcx
+00007ffc`647a3da3 b833000000      mov     eax,33h
+00007ffc`647a3da8 f604250803fe7f01 test    byte ptr [SharedUserData+0x308 (00000000`7ffe0308)],1
+00007ffc`647a3db0 7503            jne     ntdll!NtOpenFile+0x15 (00007ffc`647a3db5)
+00007ffc`647a3db2 0f05            syscall
+00007ffc`647a3db4 c3              ret
+00007ffc`647a3db5 cd2e            int     2Eh
+00007ffc`647a3db7 c3              ret
+</code></pre><pre tabindex="0"><code>0:008&gt; u ntdll!NtCreateSection
+ntdll!NtCreateSection:
+00007ffc`647a4080 4c8bd1          mov     r10,rcx
+00007ffc`647a4083 b84a000000      mov     eax,4Ah
+00007ffc`647a4088 f604250803fe7f01 test    byte ptr [SharedUserData+0x308 (00000000`7ffe0308)],1
+00007ffc`647a4090 7503            jne     ntdll!NtCreateSection+0x15 (00007ffc`647a4095)
+00007ffc`647a4092 0f05            syscall
+00007ffc`647a4094 c3              ret
+00007ffc`647a4095 cd2e            int     2Eh
+00007ffc`647a4097 c3              ret
+</code></pre><pre tabindex="0"><code>0:008&gt; u ntdll!NtMapViewOfSection
+ntdll!NtMapViewOfSection:
+00007ffc`647a3c40 4c8bd1          mov     r10,rcx
+00007ffc`647a3c43 b828000000      mov     eax,28h
+00007ffc`647a3c48 f604250803fe7f01 test    byte ptr [SharedUserData+0x308 (00000000`7ffe0308)],1
+00007ffc`647a3c50 7503            jne     ntdll!NtMapViewOfSection+0x15 (00007ffc`647a3c55)
+00007ffc`647a3c52 0f05            syscall
+00007ffc`647a3c54 c3              ret
+00007ffc`647a3c55 cd2e            int     2Eh
+00007ffc`647a3c57 c3              ret
+</code></pre><p>Yaaaaay! The system call numbers match.</p>
+<ol>
+<li>The functions <code>ntdll!NtOpenFile</code>, <code>ntdll!NtCreateSection</code> and <code>ntdll!NtMapViewOfSection</code> will allow us to load a fresh unhooked copy of NTDLL into memory.</li>
+<li>Once we have loaded NTDLL in memory, we can parse the Export Address Table (EAT) and obtain the address of any function we like, as explained before.</li>
+<li>Once we have the address of the functions we need, we can extract the system call number at run time and call the functions we need to do the magic we need xD.</li>
+</ol>
+<p>More information: (reading exercise for the user):</p>
+<ul>
+<li><a href="https://www.mdsec.co.uk/2022/01/edr-parallel-asis-through-analysis/">https://www.mdsec.co.uk/2022/01/edr-parallel-asis-through-analysis/</a></li>
+<li><a href="https://blogs.blackberry.com/en/2017/10/windows-10-parallel-loading-breakdown">https://blogs.blackberry.com/en/2017/10/windows-10-parallel-loading-breakdown</a>.</li>
+<li><a href="https://stackoverflow.com/questions/42789199/why-there-are-three-unexpected-worker-threads-when-a-win32-console-application-s">https://stackoverflow.com/questions/42789199/why-there-are-three-unexpected-worker-threads-when-a-win32-console-application-s</a></li>
+</ul>
+<h1 id="rust">Rust</h1>
+<p>I&rsquo;ve ported the code to Rust, which can be tuned to make a library for system calls.</p>
+<p><a href="https://github.com/memN0ps/arsenal-rs/tree/main/parallel_syscalls-rs">https://github.com/memN0ps/arsenal-rs/tree/main/parallel_syscalls-rs</a></p>
+<h2 id="why-rust">Why Rust?</h2>
+<p>Why not? Rust is awesome! A low-level statically (compiled) and strongly typed systems programming language that is faster than C/C++, allowing you to achieve memory safety, concurrency and perform low-level tasks writing high-level code with an excellent compiler, community and documentation. I have moved away from my old favourite languages C/C++/C#, and started my new Rusty adventure.</p>
+<p>This project has allowed me to learn about Rust Windows Internals and enhance my red teaming skills. I&rsquo;m relatively new to Rust, but I firmly believe Rust is the future for robust programs, red teaming and malware development.</p>
+<p>Read more about Rust here:</p>
+<ul>
+<li><a href="https://kerkour.com/why-rust-for-offensive-security/">https://kerkour.com/why-rust-for-offensive-security/</a></li>
+<li><a href="https://zerotomastery.io/blog/why-you-should-learn-rust/">https://zerotomastery.io/blog/why-you-should-learn-rust/</a></li>
+<li><a href="https://github.com/skerkour/black-hat-rust">https://github.com/skerkour/black-hat-rust</a></li>
+<li><a href="https://github.com/trickster0/OffensiveRust">https://github.com/trickster0/OffensiveRust</a></li>
+<li><a href="https://github.com/Kudaes/DInvoke_rs">https://github.com/Kudaes/DInvoke_rs</a></li>
+<li><a href="https://github.com/zorftw/kdmapper-rs">https://github.com/zorftw/kdmapper-rs</a></li>
+<li><a href="https://github.com/postrequest/link">https://github.com/postrequest/link</a></li>
+<li><a href="https://github.com/kmanc/remote_code_oxidation">https://github.com/kmanc/remote_code_oxidation</a></li>
+</ul>
+<p>Sorry for the typos and grammar mistakes in advance. It takes a lot of effort to write a blog, it is easy to get lazy.</p>
+<p>Sorry if I missed anyone for the credits. Thanks for reading. All credits to <a href="https://www.mdsec.co.uk/2022/01/edr-parallel-asis-through-analysis/">MDsec</a> and most of all <a href="https://twitter.com/peterwintrsmith">Peter Winter-Smith</a>.</p>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://www.mdsec.co.uk/2022/01/edr-parallel-asis-through-analysis/">https://www.mdsec.co.uk/2022/01/edr-parallel-asis-through-analysis/</a></li>
+<li><a href="https://twitter.com/peterwintrsmith">https://twitter.com/peterwintrsmith</a></li>
+<li><a href="https://offensivedefence.co.uk/posts/dinvoke-syscalls/">https://offensivedefence.co.uk/posts/dinvoke-syscalls/</a></li>
+<li><a href="https://thewover.github.io/Dynamic-Invoke/">https://thewover.github.io/Dynamic-Invoke/</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Protection_ring">https://en.wikipedia.org/wiki/Protection_ring</a></li>
+<li><a href="https://www.codereversing.com/blog/archives/128">https://www.codereversing.com/blog/archives/128</a></li>
+<li><a href="https://secureyourit.co.uk/wp/2020/04/12/walking-the-peb-with-vba-x64/">https://secureyourit.co.uk/wp/2020/04/12/walking-the-peb-with-vba-x64/</a></li>
+<li><a href="https://research.nccgroup.com/2020/05/25/cve-2018-8611-exploiting-windows-ktm-part-5-5-vulnerability-detection-and-a-better-read-write-primitive/">https://research.nccgroup.com/2020/05/25/cve-2018-8611-exploiting-windows-ktm-part-5-5-vulnerability-detection-and-a-better-read-write-primitive/</a></li>
+<li><a href="https://alice.climent-pommeret.red/posts/direct-syscalls-hells-halos-syswhispers2/">https://alice.climent-pommeret.red/posts/direct-syscalls-hells-halos-syswhispers2/</a></li>
+<li><a href="https://blogs.blackberry.com/en/2017/10/windows-10-parallel-loading-breakdown">https://blogs.blackberry.com/en/2017/10/windows-10-parallel-loading-breakdown</a></li>
+<li><a href="https://resources.infosecinstitute.com/topic/windows-architecture-and-userkernel-mode/">https://resources.infosecinstitute.com/topic/windows-architecture-and-userkernel-mode/</a></li>
+<li><a href="https://kylemistele.medium.com/a-beginners-guide-to-edr-evasion-b98cc076eb9a">https://kylemistele.medium.com/a-beginners-guide-to-edr-evasion-b98cc076eb9a</a></li>
+<li><a href="https://resources.infosecinstitute.com/topic/the-export-directory/">https://resources.infosecinstitute.com/topic/the-export-directory/</a></li>
+<li><a href="https://guidedhacking.com/threads/how-to-hook-functions-code-detouring-guide.14185/">https://guidedhacking.com/threads/how-to-hook-functions-code-detouring-guide.14185/</a></li>
+<li><a href="https://www.mdsec.co.uk/2020/08/firewalker-a-new-approach-to-generically-bypass-user-space-edr-hookin">https://www.mdsec.co.uk/2020/08/firewalker-a-new-approach-to-generically-bypass-user-space-edr-hookin</a></li>
+<li><a href="https://posts.specterops.io/adventures-in-dynamic-evasion-1fe0bac57aa">https://posts.specterops.io/adventures-in-dynamic-evasion-1fe0bac57aa</a></li>
+<li><a href="https://jhalon.github.io/utilizing-syscalls-in-csharp-1/">https://jhalon.github.io/utilizing-syscalls-in-csharp-1/</a></li>
+<li><a href="https://jhalon.github.io/utilizing-syscalls-in-csharp-2/">https://jhalon.github.io/utilizing-syscalls-in-csharp-2/</a></li>
+<li><a href="https://blog.nviso.eu/2021/10/21/kernel-karnage-part-1/">https://blog.nviso.eu/2021/10/21/kernel-karnage-part-1/</a></li>
+<li><a href="https://jmpesp.me/malware-analysis-syscalls-example/">https://jmpesp.me/malware-analysis-syscalls-example/</a></li>
+<li><a href="https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/">https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/</a></li>
+<li><a href="https://mohamed-fakroud.gitbook.io/red-teamings-dojo/shellcoding/leveraging-from-pe-parsing-technique-to-write-x86-shellcode">https://mohamed-fakroud.gitbook.io/red-teamings-dojo/shellcoding/leveraging-from-pe-parsing-technique-to-write-x86-shellcode</a></li>
+<li><a href="https://0xrick.github.io/win-internals/pe5/">https://0xrick.github.io/win-internals/pe5/</a></li>
+<li><a href="https://0xevilc0de.com/locating-dll-name-from-the-process-environment-block-peb/">https://0xevilc0de.com/locating-dll-name-from-the-process-environment-block-peb/</a></li>
+<li><a href="https://blogs.keysight.com/blogs/tech/nwvs.entry.html/2020/07/27/debugging_malwarewi-hk5u.html">https://blogs.keysight.com/blogs/tech/nwvs.entry.html/2020/07/27/debugging_malwarewi-hk5u.html</a></li>
+<li><a href="https://stackoverflow.com/questions/42789199/why-there-are-three-unexpected-worker-threads-when-a-win32-console-application-s">https://stackoverflow.com/questions/42789199/why-there-are-three-unexpected-worker-threads-when-a-win32-console-application-s</a></li>
+<li><a href="https://docs.microsoft.com/">https://docs.microsoft.com/</a></li>
+<li><a href="https://kerkour.com/why-rust-for-offensive-security/">https://kerkour.com/why-rust-for-offensive-security/</a></li>
+<li><a href="https://zerotomastery.io/blog/why-you-should-learn-rust/">https://zerotomastery.io/blog/why-you-should-learn-rust/</a></li>
+<li><a href="https://github.com/skerkour/black-hat-rust">https://github.com/skerkour/black-hat-rust</a></li>
+<li><a href="https://github.com/trickster0/OffensiveRust">https://github.com/trickster0/OffensiveRust</a></li>
+<li><a href="https://github.com/Kudaes/DInvoke_rs">https://github.com/Kudaes/DInvoke_rs</a></li>
+<li><a href="https://github.com/zorftw/kdmapper-rs">https://github.com/zorftw/kdmapper-rs</a></li>
+<li><a href="https://github.com/postrequest/link">https://github.com/postrequest/link</a></li>
+<li><a href="https://github.com/kmanc/remote_code_oxidation">https://github.com/kmanc/remote_code_oxidation</a></li>
+<li><a href="https://github.com/mdsecactivebreach/ParallelSyscalls/">https://github.com/mdsecactivebreach/ParallelSyscalls/</a></li>
+<li><a href="https://github.com/memN0ps/arsenal-rs/tree/main/parallel_syscalls-rs">https://github.com/memN0ps/arsenal-rs/tree/main/parallel_syscalls-rs</a></li>
+<li><a href="https://github.com/cube0x0/ParallelSyscalls/">https://github.com/cube0x0/ParallelSyscalls/</a></li>
+<li><a href="https://github.com/frkngksl/ParallelNimcalls">https://github.com/frkngksl/ParallelNimcalls</a></li>
+<li><a href="https://github.com/Mr-Un1k0d3r/EDRs">https://github.com/Mr-Un1k0d3r/EDRs</a></li>
+<li><a href="https://twitter.com/TheRealWover">https://twitter.com/TheRealWover</a></li>
+</ul>
+
+
+        
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://memn0ps.github.io/XMAS-Pwn-Santa-Tobacco-Shop/" data-toggle="tooltip" data-placement="top" title="XMAS Pwn: Santa&#39;s Tobacco Shop">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://memn0ps.github.io/Process-Hollowing/" data-toggle="tooltip" data-placement="top" title="Process Hollowing">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+
+    </div>
+  </div>
+</div>
+
+      
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="https://github.com/memN0ps" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/memN0ps" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            <a href="" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              memN0ps
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2022
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://memn0ps.github.io/">memN0ps</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="https://gohugo.io">Hugo v0.93.1</a> powered &nbsp;&bull;&nbsp; Theme <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a> adapted from <a href="https://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="https://memn0ps.github.io/js/main.js"></script><script> renderMathInElement(document.body); </script><script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script><script src="https://memn0ps.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+
+
+    
+  </body>
+</html>
+

