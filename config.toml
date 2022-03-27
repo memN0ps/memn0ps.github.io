@@ -2,8 +2,7 @@ baseurl = "https://memn0ps.github.io/"
 contentdir    = "content"
 layoutdir     = "layouts"
 publishdir    = "docs"
-title = "memN0ps"
-canonifyurls  = false
+title = "Pentester / Red Teamer and CRTO, OSEP, OSWE, OSCE, OSCP, OSWP"
 
 DefaultContentLanguage = "en"
 theme = "beautifulhugo"
@@ -14,7 +13,7 @@ pygmentCodeFences = true
 #googleAnalytics = "XXX"
 
 [Params]
-  subtitle = "CRTO, OSEP, OSWE, OSCE, OSCP, OSWP"
+  #subtitle = "CRTO, OSEP, OSWE, OSCE, OSCP, OSWP"
   logo = "/avatar-icon.jpg"
   favicon = "/avatar-icon.jpg"
   dateFormat = "January 2, 2006"
