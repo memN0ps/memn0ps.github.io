@@ -13,7 +13,7 @@ pygmentCodeFences = true
 #googleAnalytics = "XXX"
 
 [Params]
-  subtitle = "Red Teaming | Rust | Malware | Reverse Engineering | Windows Internals | Windows Kernel."
+  #subtitle = ""
   logo = "/avatar-icon.jpg"
   favicon = "/avatar-icon.jpg"
   dateFormat = "January 2, 2006"
