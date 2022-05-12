@@ -13,7 +13,7 @@ pygmentCodeFences = true
 #googleAnalytics = "XXX"
 
 [Params]
-  #subtitle = ""
+  subtitle = "CRTO, OSEP, OSWE, OSCE, OSWP, OSCP"
   logo = "/avatar-icon.jpg"
   favicon = "/avatar-icon.jpg"
   dateFormat = "January 2, 2006"
